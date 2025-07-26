@@ -28,8 +28,8 @@
 	</head>
 	<body>
 		<div class="container">
-		<h1>Soft Body Project Proposal</h1>
-		<div style="text-align: center;">Names: Youcheng Tan, Jeffery Lin, Katrina Zhu, Jiaqi Su</div>
+		<h1>Jelly Warrior: Real-Time Soft-Body Simulation</h1>
+		<div style="text-align: center;">Team Members: Jeffrey Lin 3038801937 (jeffreylin888888@berkeley.edu), Katrina Zhu 3040563880 (katrina_zhu@berkeley.edu), Jiaqi Su 3040853312 (sujiaqi@berkeley.edu), Youcheng Tan 3039096504 (youcheng_tan@berkeley.edu)</div>
 
 		<br>
 
@@ -45,11 +45,13 @@
 
 		<h2>Summary</h2>
 		&emsp; 
-		We want to implement a realistic simulation of soft bodies colliding with other soft bodies as well as hard surfaces with as realistit lighting if possible. The main goal of this project is to create visually convincing deformation simulations of colliding soft bodies and hard surfaces.
+		We are building an interactive, stylized simulation of a soft-body “jelly warrior” using a spring-mass model. Our goal is to create a visually satisfying experience that showcases squishy deformation, wobble animations, and fun jelly-like shading. The scene will allow the user to rotate the camera to appreciate the dynamic elasticity in real time. Inspired by soft-body demos in animations and games, this project aims to be engaging, polished, and technically feasible.
 		
 		<h2>Problem Description</h2>
 		<p>
 			&emsp; 
+			Soft-body deformation is widely used in games and simulations to model characters, objects, or materials that behave elastically (like jelly or rubber). Unlike rigid-body simulations, soft-body models must account for internal structure, elasticity, and response to external forces. While more physically accurate simulations use finite element methods (FEM), we aim to use a spring-mass system to achieve real-time visual fidelity with less computational overhead. The core challenge is creating realistic yet stable deformation behavior, especially under animation or collisions. We'll implement a spring-mass soft-body framework, design a 3D jelly warrior model, and render it with shaders that give a translucent or subsurface-scattering-like appearance. This problem is both educational and visually impactful. Our approach is inspired by real-time visual references like:
+			<br>
 			There are a few main challenges:	
 			<ol>
 				<li>
@@ -66,14 +68,46 @@
 		<h2>Goals and Deliverables</h2>
 		<p>
 			&emsp;
+			We aim to answer: Can a spring-mass-based simulation produce visually convincing soft-body deformation in real time with a stylized shader? Success will be measured by visual responsiveness, stability, and perceived realism in the demo video.
 			<br>
-			Here we lay out the goals for this project:
+			Here we lay out the goals we should achieve as a base line for this project:
 			<ul>
 				<li>
-					Gravity simulation and arbitary initial conditions on objects of various shapes obtained from mesh files
+					A working spring-mass soft-body simulation for a jelly character
 				</li>
 				<li>
-					Accurate simulation of soft body dynamics.
+					Elastic deformation during idle wobble and a punch animation
+				</li>
+				<li>
+					Simple ground-plane collision response
+				</li>
+				<li>
+					A stylized shader for a translucent, jelly-like effect
+				</li>
+				<li>
+					Interactive camera controls (rotate, zoom)
+				</li>
+				<li>
+					A polished demo video and screenshots of key moments
+				</li>
+				<li>
+					Full write-up with explanation of our implementation and results
+				</li>
+			</ul>
+			<br>
+			Here we lay out the goals we hope to achieve for this project:
+			<ul>
+				<li>
+					A toggle to show the internal spring network or deformation heatmap
+				</li>
+				<li>
+					Slightly enhanced jelly shading (e.g., fake subsurface or Fresnel effect)
+				</li>
+				<li>
+					A decorative background scene (e.g., simple dojo or floating platform)
+				</li>
+				<li>
+					A second jelly object with limited interaction (if time permits)
 				</li>
 			</ul>
 		</p>
@@ -82,16 +116,92 @@
 		<h3>Week 1(7/28 - 8/8)</h3>
 		<p>
 			&emsp;
-			Initial conditions and gravity, collision, soft body dynamics (Milestone due)
+			Week 1 objectives:
+			<ul>
+				<li>
+					Implement spring-mass system for jelly character
+				</li>
+				<li>
+					Set up point mass structure and internal springs
+				</li>
+				<li>
+					Add damping and stability tuning
+				</li>
+				<li>
+					Implement simple ground-plane collision
+				</li>
+				<li>
+					Add basic camera controls (orbit, zoom)
+				</li>
+				<li>
+					Start work on translucent jelly shader (basic Fresnel or alpha blending)
+				</li>
+			</ul>
 		</p>
 
 		<h3>Week 2(8/8 - 8/12)</h3>
 		<p>
 			&emsp;
-			Speed up simulation by various algorithms (final polishing)
+			Week 2 objectives:
+			<ul>
+				<li>
+					Add idle wobble animation and 1 scripted punch motion
+				</li>
+				<li>
+					Finalize shader polish and lighting
+				</li>
+				<li>
+					Add scene setup (flat plane or basic background)
+				</li>
+				<li>
+					Polish visual output, tweak parameters for realism
+				</li>
+				<li>
+					Record demo video and screenshots
+				</li>
+				<li>
+					Write final report and prepare PDF submission
+				</li>
+			</ul>
+		</p>
+
+		<p>
+			&emsp;
+			8/12: Presentation
 		</p>
 
 		<h2>Resources</h2>
+		<a href=https://matthias-research.github.io/pages/tenMinutePhysics/13-softBody.html>“Ten Minute Physics – Soft Body Simulation”</a><br>
+		Game Physics Engine Development by Ian Millington (Chapter 16: Soft Bodies)<br>
+		<a href=https://www.shadertoy.com/results?query=jelly>ShaderToy Jelly Shader Examples:</a><br>
+		<a href=https://www.youtube.com/watch?v=iBI_WA4CXi8>Steve Final Smash – Softbody Simulation</a><br>
+		<a href=https://www.youtube.com/shorts/feRWIC1qiaw>Jelly Simulation Short</a><br>
+		<a href=https://github.com/jiripospisil/SoftBodyPhysics>SoftBodyPhysics</a><br>
+		<a href=https://github.com/erincatto/box2d>Box2D (for collision inspiration)</a><br>
+
+	<h2>Goals and Deliverables</h2>
+		<p>
+			&emsp;
+			Tools and Platform:
+			<br>
+			<ul>
+				<li>
+					Programming Language: C++ with OpenGL
+				</li>
+				<li>
+					Math Libraries: GLM or Eigen
+				</li>
+				<li>
+					3D Modeling (Optional): Blender
+				</li>
+				<li>
+					Development Environment: macOS and Linux
+				</li>
+				<li>
+					Version Control: GitHub
+				</li>
+			</ul>
+		</p>
 
 	</body>
 </html>
