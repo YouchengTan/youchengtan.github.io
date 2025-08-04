@@ -158,6 +158,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="EBO.cpp" />
     <ClCompile Include="glad.c" />
+    <ClCompile Include="Jelly.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="shaderClass.cpp" />
     <ClCompile Include="stb.cpp" />
@@ -168,6 +169,7 @@
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="EBO.h" />
+    <ClInclude Include="Jelly.h" />
     <ClInclude Include="shaderClass.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="VAO.h" />
@@ -180,6 +182,7 @@
     <None Include="light.vert" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="..\..\..\..\Downloads\slime.png" />
     <Image Include="..\..\..\brick.png" />
     <Image Include="..\..\..\planks.png" />
     <Image Include="..\..\..\planksSpec.png" />

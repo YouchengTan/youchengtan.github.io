@@ -16,6 +16,7 @@ namespace fs = std::filesystem;
 #include"VAO.h"
 #include"VBO.h"
 #include"EBO.h"
+#include"Jelly.h"
 #include"Camera.h"
 
 
@@ -142,6 +143,8 @@ int main()
 	VBO1.Unbind();
 	EBO1.Unbind();
 
+	Jelly j1 = Jelly(glm::vec3(1.0f, 0.0f, 0.0f), 0.2f, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, 1.0f, 4);
+
 
 	// Shader for light cube
 	Shader lightShader("light.vert", "light.frag");
@@ -194,10 +197,8 @@ int main()
 	Texture brickTex((parentDir + texPath + "brick.png").c_str(), GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
 	brickTex.texUnit(shaderProgram, "tex0", 0);
 
-	// Original code from the tutorial
-	/*Texture brickTex("brick.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
-	brickTex.texUnit(shaderProgram, "tex0", 0);*/
-
+	Texture jellyTex((parentDir + texPath + "slime.png").c_str(), GL_TEXTURE_2D, GL_TEXTURE1, GL_RGB, GL_UNSIGNED_BYTE);
+	jellyTex.texUnit(shaderProgram, "tex0", 1);
 
 
 	// Enables the Depth Buffer
@@ -232,6 +233,9 @@ int main()
 		VAO1.Bind();
 		// Draw primitives, number of indices, datatype of indices, index of indices
 		glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(int), GL_UNSIGNED_INT, 0);
+		brickTex.Unbind();
+		jellyTex.Bind();
+		j1.Render();
 
 
 
