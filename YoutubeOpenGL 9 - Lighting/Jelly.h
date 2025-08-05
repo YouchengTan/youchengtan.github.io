@@ -12,6 +12,10 @@ public:
     Jelly(glm::vec3 center, float radius, glm::vec3 velocity, glm::vec3 acceleration, float pointMass, float springStrength, int springsPerEdge);
 
     void Render();
+    void apply_idle_wobble(float time);
+    void apply_punch();
+    void resolve_ground_collision();
+
 
 private:
     glm::vec3 center;
@@ -30,6 +34,8 @@ private:
     EBO* ebo;
 
     void GenerateCubeMesh();
+    std::vector<GLfloat> originalVertices; // store the initial unmodified vertex positions
+
 };
 
 #endif

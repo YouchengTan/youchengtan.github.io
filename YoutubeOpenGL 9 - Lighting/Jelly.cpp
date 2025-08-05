@@ -14,6 +14,9 @@ Jelly::Jelly(glm::vec3 center, float radius, glm::vec3 velocity, glm::vec3 accel
 {
     GenerateCubeMesh();
 
+    // Save the initial vertex positions
+    originalVertices = vertices;
+
     vao.Bind();
     vbo = new VBO(vertices.data(), vertices.size() * sizeof(GLfloat));
     ebo = new EBO(indices.data(), indices.size() * sizeof(GLuint));
@@ -121,3 +124,55 @@ void Jelly::Render() {
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
     vao.Unbind();
 }
+
+void Jelly::apply_idle_wobble(float time) {
+    // Reset to original vertices before applying punch
+    vertices = originalVertices;
+    float freq = 4.0f;   // breathing frequency
+    float amp = 0.01f;   // amplitude of the wobble
+
+    // Update positions in the vertex buffer
+    for (size_t i = 0; i < vertices.size(); i += 11) {
+        glm::vec3 pos(vertices[i], vertices[i + 1], vertices[i + 2]);
+        glm::vec3 dir = glm::normalize(pos - center);
+        pos += dir * (amp * sin(freq * time));
+        vertices[i] = pos.x;
+        vertices[i + 1] = pos.y;
+        vertices[i + 2] = pos.z;
+    }
+
+    // Upload updated vertex data to the GPU
+    vbo->Bind();
+    glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(GLfloat), vertices.data());
+}
+
+void Jelly::apply_punch() {
+    vertices = originalVertices;
+    glm::vec3 punchDir(0, 0, 1); // forward direction for the punch
+    float punchForce = 0.05f;    // displacement amount
+
+    for (size_t i = 0; i < vertices.size(); i += 11) {
+        if (vertices[i + 2] > center.z) { // only push vertices in front
+            vertices[i] += punchDir.x * punchForce;
+            vertices[i + 1] += punchDir.y * punchForce;
+            vertices[i + 2] += punchDir.z * punchForce;
+        }
+    }
+
+    vbo->Bind();
+    glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(GLfloat), vertices.data());
+}
+
+void Jelly::resolve_ground_collision() {
+    float groundY = 0.0f;
+
+    for (size_t i = 0; i < vertices.size(); i += 11) {
+        if (vertices[i + 1] < groundY) {
+            vertices[i + 1] = groundY; // clamp vertex to ground level
+        }
+    }
+
+    vbo->Bind();
+    glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(GLfloat), vertices.data());
+}
+

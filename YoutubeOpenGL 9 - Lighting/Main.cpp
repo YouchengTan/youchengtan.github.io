@@ -234,6 +234,22 @@ int main()
 		// Draw primitives, number of indices, datatype of indices, index of indices
 		glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(int), GL_UNSIGNED_INT, 0);
 		brickTex.Unbind();
+
+		// --- Animation and collision updates ---
+		float currentTime = glfwGetTime();
+
+		// Apply idle wobble animation
+		j1.apply_idle_wobble(currentTime);
+
+		// Trigger punch when space key is pressed
+		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+			j1.apply_punch();
+		}
+
+		// Resolve collision with the ground plane
+		j1.resolve_ground_collision();
+
+		// --- Render the jelly object ---
 		jellyTex.Bind();
 		j1.Render();
 
