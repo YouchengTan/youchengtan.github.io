@@ -207,7 +207,7 @@ void Jelly::integrate(float dt)
 void Jelly::satisfyConstraints(int iterations)
 {
     // k in [0,1]; higher = stiffer. Use per-iteration k so total stiffness ~= k_total.
-    const float k_total = 0.6f;                           // try 0.4–0.8
+    const float k_total = 0.6f;                           // try 0.4ï¿½0.8
     const float k_iter = 1.0f - std::pow(1.0f - k_total, 1.0f / iterations);
     const float maxCorrFrac = 0.2f;                       // optional safety clamp
 
@@ -320,6 +320,34 @@ void Jelly::Render()
     glDrawElements(GL_TRIANGLES, (GLsizei)indices.size(), GL_UNSIGNED_INT, 0);
     vao.Unbind();
 }
+
+void Jelly::TeleportToCenter(const glm::vec3& newCenter)
+{
+    glm::vec3 d = newCenter - center;
+    center = newCenter;
+    for (auto& pt : particles) {
+        pt.p   += d;
+        pt.prev = pt.p;           // zero velocity
+        pt.a    = glm::vec3(0.0f);// clear any accel
+    }
+    updateAABB();
+    rebuildIndicesAndAttributes();
+    updateGPU();
+}
+
+
+
+void Jelly::TranslateAll(const glm::vec3& d)
+{
+    center += d;
+    for (auto& pt : particles) { pt.p += d; pt.prev += d; }
+    rebuildIndicesAndAttributes();
+    updateAABB();
+    updateGPU();
+}
+
+
+
 
 void Jelly::apply_idle_wobble(float t)
 {

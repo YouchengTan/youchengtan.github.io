@@ -20,6 +20,10 @@ public:
 
     void Update(float dt, const Container& box);
     void Render();
+    void TeleportToCenter(const glm::vec3& newCenter);
+
+    void TranslateAll(const glm::vec3& d);
+
 
     // collisions with another jelly (simple AABB push for starters)
     void CollideWith(Jelly& other);
@@ -76,7 +80,7 @@ private:
     // softbody data
     std::vector<Particle> particles;
     std::vector<Spring>   springs;
-    int Nx, Ny, Nz;  // grid points per axis for a cube surface lattice (we’ll duplicate for faces)
+    int Nx, Ny, Nz;  // grid points per axis for a cube surface lattice (weï¿½ll duplicate for faces)
 
     int S = 0; // points per edge = springsPerEdge + 1
     std::vector<std::vector<int>> facePointIdx; // 6 faces, each S*S entries
