@@ -1,7 +1,7 @@
 #include"Texture.h"
 #include <iostream> // Include iostream for error reporting
 
-Texture::Texture(const char* image, GLenum texType, GLenum slot, GLenum format, GLenum pixelType)
+Texture::Texture(const char* image, GLenum texType, GLenum slot, GLenum format, GLenum pixelType, float alpha)
 {
 	// Assigns the type of the texture ot the texture object
 	type = texType;
@@ -11,10 +11,19 @@ Texture::Texture(const char* image, GLenum texType, GLenum slot, GLenum format, 
 	// Flips the image so it appears right side up
 	stbi_set_flip_vertically_on_load(true);
 	// Reads the image from a file and stores it in bytes
-	unsigned char* bytes = stbi_load(image, &widthImg, &heightImg, &numColCh, 0);
+	unsigned char* bytes = stbi_load(image, &widthImg, &heightImg, &numColCh, 4);
 	if (!bytes) {
 		std::cerr << "Failed to load texture: " << image << std::endl;
 		return;
+	}
+
+	// Clamp alpha between 0 and 1
+	alpha = glm::clamp(alpha, 0.0f, 1.0f);
+	unsigned char alphaByte = static_cast<unsigned char>(alpha * 255);
+
+	// Set alpha for each pixel
+	for (int i = 0; i < widthImg * heightImg; ++i) {
+		bytes[i * 4 + 3] = alphaByte; // 4th byte is alpha
 	}
 
 	// Generates an OpenGL texture object
@@ -36,7 +45,7 @@ Texture::Texture(const char* image, GLenum texType, GLenum slot, GLenum format, 
 	// glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, flatColor);
 
 	// Assigns the image to the OpenGL Texture object
-	glTexImage2D(texType, 0, GL_RGBA, widthImg, heightImg, 0, format, pixelType, bytes);
+	glTexImage2D(texType, 0, GL_RGBA, widthImg, heightImg, 0, GL_RGBA, pixelType, bytes);
 	// Generates MipMaps
 	glGenerateMipmap(texType);
 

@@ -52,13 +52,15 @@ int main() {
     gladLoadGL();
     glViewport(0, 0, width, height);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Shaders
     Shader shader("default.vert", "default.frag");   // used for everything textured/lit
     Shader lightShader("light.vert", "light.frag");  // small light cube
 
     // Camera
-    Camera camera(width, height, glm::vec3(0.0f, 0.5f, 0.9f));
+    Camera camera(width, height, glm::vec3(0.0f, 0.3f, 1.0f));
 
     // Light
     glm::vec4 lightColor = glm::vec4(1, 1, 1, 1);
@@ -80,7 +82,7 @@ int main() {
     std::string parentDir = (fs::current_path().fs::path::parent_path()).string();
     std::string texPath = "/Resources/";
     Texture brickTex((parentDir + texPath + "brick.png").c_str(), GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
-    Texture jellyTex((parentDir + texPath + "slime.png").c_str(), GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
+    Texture jellyTex((parentDir + texPath + "slime.png").c_str(), GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE, 0.7);
     brickTex.texUnit(shader, "tex0", 0); // set once; we’ll bind brickTex or jellyTex on unit 0 before draw
 
     // Container (open top)
@@ -163,6 +165,7 @@ int main() {
     glUniform4f(glGetUniformLocation(lightShader.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 
     shader.Activate();
+    glUniform4f(glGetUniformLocation(shader.ID, "jellyTint"), 1.0f, 1.0f, 1.0f, 0.6f);
     glUniform4f(glGetUniformLocation(shader.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
     glUniform3f(glGetUniformLocation(shader.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
     glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(I));
