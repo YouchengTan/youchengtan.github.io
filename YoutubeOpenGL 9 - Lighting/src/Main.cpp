@@ -31,7 +31,7 @@ bool dragging = false, wasDown = false;
 float grabDist = 0.0f;
 glm::vec3 grabOffset(0.0f);
 glm::vec3 dragTargetCenter(0.0f);
-
+Jelly* draggedJelly = nullptr;  // pointer to currently dragged jelly
 
 
 
@@ -244,21 +244,44 @@ int main() {
 
             Ray r = mouseRay(mx * sx, my * sy, fbWidth, fbHeight, camera);
 
+            // Check all jellies and pick closest
+            float closestHit = std::numeric_limits<float>::max();
+            draggedJelly = nullptr;
+
+            // Check j1
             float tHit;
+            if (rayAABB(r, j1.getMin(), j1.getMax(), tHit)) {
+                if (tHit < closestHit) {
+                    closestHit = tHit;
+                    draggedJelly = &j1;
+                }
+            }
+
+            // Check j2
             if (rayAABB(r, j2.getMin(), j2.getMax(), tHit)) {
-                dragging         = true;
-                grabDist         = tHit;
-                glm::vec3 hit    = r.o + r.d * tHit;
-                grabOffset       = hit - j2.center;   // keep the exact grabbed point
-                dragTargetCenter = j2.center;         // initialize target
+                if (tHit < closestHit) {
+                    closestHit = tHit;
+                    draggedJelly = &j2;
+                }
+            }
+
+            if (draggedJelly) {
+                dragging = true;
+                grabDist = closestHit;
+                glm::vec3 hit = r.o + r.d * closestHit;
+                grabOffset = hit - draggedJelly->center;
+                dragTargetCenter = draggedJelly->center;
             }
         }
 
 
-        if (!down && wasDown) dragging = false;
+        if (!down && wasDown) {
+            dragging = false;
+            draggedJelly = nullptr;  // Clear the dragged jelly reference
+        }
         wasDown = down;
 
-        if (dragging) {
+        if (dragging && draggedJelly) {
             double mx, my; 
             glfwGetCursorPos(window, &mx, &my);
 
@@ -268,8 +291,8 @@ int main() {
             double sy = double(fbHeight) / double(winH);
 
             Ray r = mouseRay(mx * sx, my * sy, fbWidth, fbHeight, camera);
-            glm::vec3 desired       = r.o + r.d * grabDist;   // point along the ray
-            dragTargetCenter        = desired - grabOffset;   // keep grabbed point under cursor
+            glm::vec3 desired = r.o + r.d * grabDist;
+            dragTargetCenter = desired - grabOffset;
         }
 
 
@@ -286,9 +309,9 @@ int main() {
             j1.Update((float)fixedDt, box);
             j2.Update((float)fixedDt, box);
             j1.CollideWith(j2);
-            if (dragging) {
-                glm::vec3 smoothed = glm::mix(j2.center, dragTargetCenter, 0.35f); // tweak 0.2–0.5
-                j2.TeleportToCenter(smoothed);
+            if (dragging && draggedJelly) {
+                glm::vec3 smoothed = glm::mix(draggedJelly->center, dragTargetCenter, 0.35f);
+                draggedJelly->TeleportToCenter(smoothed);
             }            
             accumulator -= fixedDt;
         }
