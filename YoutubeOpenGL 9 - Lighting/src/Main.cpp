@@ -143,8 +143,8 @@ int main() {
     box.friction = 0.6f;
 
     // Two jelly cubes � lighter mesh + gentle springs (PoC-friendly)
-    Jelly j1(glm::vec3(0.00f, 0.70f, 0.00f), 0.35f, glm::vec3(0), glm::vec3(0), 0.05f, 0.25f, 2);
-    Jelly j2(glm::vec3(0.22f, 0.95f, 0.00f), 0.35f, glm::vec3(0), glm::vec3(0), 0.05f, 0.25f, 2);
+    Jelly j1(glm::vec3(0.00f, 0.70f, 0.00f), 0.35f, glm::vec3(0), glm::vec3(0), 0.10f, 0.020f, 4);
+    Jelly j2(glm::vec3(0.22f, 0.95f, 0.00f), 0.35f, glm::vec3(0), glm::vec3(0), 0.10f, 0.020f, 4);
 
 
     // Build brick floor and 4 brick walls as world-space quads
@@ -220,6 +220,11 @@ int main() {
     glUniform4f(glGetUniformLocation(shader.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
     glUniform3f(glGetUniformLocation(shader.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
     glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(I));
+
+    glUniform1f(glGetUniformLocation(shader.ID, "jellyWrap"),      0.4f);
+    glUniform1f(glGetUniformLocation(shader.ID, "jellySpecular"),  0.7f);
+    glUniform1f(glGetUniformLocation(shader.ID, "jellyShininess"), 64.0f);
+    glUniform4f(glGetUniformLocation(shader.ID, "jellyTint"), 0.8f, 1.0f, 0.85f, 0.5f);
 
     // Fixed-timestep physics
     double prevTime = glfwGetTime();
@@ -333,6 +338,7 @@ int main() {
         brickTex.Unbind();
 
         // Draw jellies with SLIME texture (same sampler/unit)
+        glDisable(GL_CULL_FACE);
         jellyTex.Bind();
         j1.Render();
         j2.Render();
