@@ -127,6 +127,82 @@ void Jelly::GenerateCubeMesh()
     addPairSprings(2, 3, /*mirrorU=*/true,  /*mirrorV=*/false, bodyK); // +X <-> -X
     addPairSprings(4, 5, /*mirrorU=*/false, /*mirrorV=*/true, bodyK); // +Y <-> -Y
 
+    // Use +Z face (f=0) and -Z face (f=1) to fetch the shared corner particle indices.
+    // f=0 (+Z):  (u,v) = (0,0)->(-x,-y,+z), (S-1,0)->(+x,-y,+z), (S-1,S-1)->(+x,+y,+z), (0,S-1)->(-x,+y,+z)
+    // f=1 (-Z):  (0,0)->(+x,-y,-z), (S-1,0)->(-x,-y,-z), (S-1,S-1)->(-x,+y,-z), (0,S-1)->(+x,+y,-z)
+    auto idx = [&](int face, int u, int v) { return facePointIdx[face][v * S + u]; };
+
+    // +Z face corners
+    const int c_xn_yn_zp = idx(0, 0, 0);
+    const int c_xp_yn_zp = idx(0, S - 1, 0);
+    const int c_xp_yp_zp = idx(0, S - 1, S - 1);
+    const int c_xn_yp_zp = idx(0, 0, S - 1);
+
+    // -Z face corners
+    const int c_xp_yn_zn = idx(1, 0, 0);
+    const int c_xn_yn_zn = idx(1, S - 1, 0);
+    const int c_xn_yp_zn = idx(1, S - 1, S - 1);
+    const int c_xp_yp_zn = idx(1, 0, S - 1);
+
+    // Softer than surface/body springs
+    const float vertexK = springStrength * 0.45f; // try 0.35–0.6
+
+    auto addSoftSpring = [&](int a, int b, float k) {
+        if (a == b) return;
+        float rest = glm::length(particles[a].p - particles[b].p);
+        springs.push_back({ a, b, rest, k });
+        };
+
+    // For reference of face indices (from your faces[] setup above):
+    // 0:+Z, 1:-Z, 2:+X, 3:-X, 4:+Y, 5:-Y
+
+    // Corner indices on +X (face=2) and -X (face=3)
+    // +X (u->+z, v->+y): (0,0)->(+x,-y,-z), (S-1,0)->(+x,-y,+z), (S-1,S-1)->(+x,+y,+z), (0,S-1)->(+x,+y,-z)
+    const int xp_yn_zn = idx(2, 0, 0);
+    const int xp_yn_zp = idx(2, S - 1, 0);
+    const int xp_yp_zp = idx(2, S - 1, S - 1);
+    const int xp_yp_zn = idx(2, 0, S - 1);
+
+    // -X (u->-z, v->+y): (0,0)->(-x,-y,+z), (S-1,0)->(-x,-y,-z), (S-1,S-1)->(-x,+y,-z), (0,S-1)->(-x,+y,+z)
+    const int xn_yn_zp = idx(3, 0, 0);
+    const int xn_yn_zn = idx(3, S - 1, 0);
+    const int xn_yp_zn = idx(3, S - 1, S - 1);
+    const int xn_yp_zp = idx(3, 0, S - 1);
+
+    // Corner indices on +Y (face=4) and -Y (face=5)
+    // +Y (u->+x, v->+z): (0,0)->(-x,+y,-z), (S-1,0)->(+x,+y,-z), (S-1,S-1)->(+x,+y,+z), (0,S-1)->(-x,+y,+z)
+    const int xn_yp_zn_y = idx(4, 0, 0);
+    const int xp_yp_zn_y = idx(4, S - 1, 0);
+    const int xp_yp_zp_y = idx(4, S - 1, S - 1);
+    const int xn_yp_zp_y = idx(4, 0, S - 1);
+
+    // -Y (u->+x, v->-z): (0,0)->(-x,-y,+z), (S-1,0)->(+x,-y,+z), (S-1,S-1)->(+x,-y,-z), (0,S-1)->(-x,-y,-z)
+    const int xn_yn_zp_y = idx(5, 0, 0);
+    const int xp_yn_zp_y = idx(5, S - 1, 0);
+    const int xp_yn_zn_y = idx(5, S - 1, S - 1);
+    const int xn_yn_zn_y = idx(5, 0, S - 1);
+
+    // Softer than body springs (tune 0.35–0.6)
+    const float axisVertexK = springStrength * 0.45f;
+
+    // ===== Across X: (-x,*,*) <-> (+x,*,*) =====
+    addSoftSpring(xn_yn_zn, xp_yn_zn, axisVertexK); // (-x,-y,-z) <-> (+x,-y,-z)
+    addSoftSpring(xn_yn_zp, xp_yn_zp, axisVertexK); // (-x,-y,+z) <-> (+x,-y,+z)
+    addSoftSpring(xn_yp_zn, xp_yp_zn, axisVertexK); // (-x,+y,-z) <-> (+x,+y,-z)
+    addSoftSpring(xn_yp_zp, xp_yp_zp, axisVertexK); // (-x,+y,+z) <-> (+x,+y,+z)
+
+    // ===== Across Y: (*,-y,*) <-> (*,+y,*) =====
+    addSoftSpring(xn_yn_zn_y, xn_yp_zn_y, axisVertexK); // (-x,-y,-z) <-> (-x,+y,-z)
+    addSoftSpring(xp_yn_zn_y, xp_yp_zn_y, axisVertexK); // (+x,-y,-z) <-> (+x,+y,-z)
+    addSoftSpring(xn_yn_zp_y, xn_yp_zp_y, axisVertexK); // (-x,-y,+z) <-> (-x,+y,+z)
+    addSoftSpring(xp_yn_zp_y, xp_yp_zp_y, axisVertexK); // (+x,-y,+z) <-> (+x,+y,+z)
+
+    // ===== Across Z: (*,-z,*) <-> (*,+z,*) =====
+    addSoftSpring(c_xn_yn_zn, c_xp_yp_zp, vertexK); // (-x,-y,-z) <-> (+x,+y,+z)
+    addSoftSpring(c_xp_yn_zn, c_xn_yp_zp, vertexK); // (+x,-y,-z) <-> (-x,+y,+z)
+    addSoftSpring(c_xn_yp_zn, c_xp_yn_zp, vertexK); // (-x,+y,-z) <-> (+x,-y,+z)
+    addSoftSpring(c_xp_yp_zn, c_xn_yn_zp, vertexK); // (+x,+y,-z) <-> (-x,-y,+z)
+
     rebuildIndicesAndAttributes();
     updateAABB();
 }
