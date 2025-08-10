@@ -203,13 +203,12 @@ void Jelly::integrate(float dt)
         p.a = glm::vec3(0.0f);
     }
 }
-
 void Jelly::satisfyConstraints(int iterations)
 {
-    // k in [0,1]; higher = stiffer. Use per-iteration k so total stiffness ~= k_total.
-    const float k_total = 0.6f;                           // try 0.4�0.8
-    const float k_iter = 1.0f - std::pow(1.0f - k_total, 1.0f / iterations);
-    const float maxCorrFrac = 0.2f;                       // optional safety clamp
+    const float SOFTNESS = 0.35f;
+    const float MAX_CORR = 0.010f * radius;
+    const float k_total  = 0.45f;
+    const float k_iter   = 1.0f - std::pow(1.0f - k_total, 1.0f / iterations);
 
     for (int it = 0; it < iterations; ++it) {
         for (const auto& s : springs) {
@@ -221,25 +220,22 @@ void Jelly::satisfyConstraints(int iterations)
             if (l2 < 1e-12f) continue;
 
             float len = std::sqrt(l2);
-            float diff = (len - s.rest) / len;           // >0 if stretched, <0 if compressed
+            float c   = (len - s.rest);
+            glm::vec3 n = d / len;
+
             float w1 = a.invMass, w2 = b.invMass, wsum = w1 + w2;
             if (wsum <= 0.0f) continue;
 
-            // correction along d
-            glm::vec3 corr = d * (k_iter * diff);
+            glm::vec3 corr = SOFTNESS * k_iter * c * n;
 
-            // optional clamp to avoid huge single-step jumps
-            float corrLen = glm::length(corr);
-            float maxStep = maxCorrFrac * s.rest;
-            if (corrLen > maxStep) corr *= (maxStep / std::max(corrLen, 1e-8f));
+            float L = glm::length(corr);
+            if (L > MAX_CORR && L > 0.0f) corr *= (MAX_CORR / L);
 
-            // *** FIXED SIGNS ***
-            a.p += (w1 / wsum) * corr;    // move a toward b when stretched
-            b.p -= (w2 / wsum) * corr;    // move b toward a when stretched
+            a.p += (w1 / wsum) * corr;
+            b.p -= (w2 / wsum) * corr;
         }
     }
 }
-
 
 void Jelly::collideWithContainer(const Container& box)
 {
@@ -305,12 +301,23 @@ void Jelly::Update(float dt, const Container& box)
     const int iters = 4;
     for (int i = 0; i < iters; ++i) {
         collideWithContainer(box);   // project onto container planes
-        satisfyConstraints(1);       // then spring projection
+        satisfyConstraints(2);       // then spring projection
     }
+    dampVel(0.996f); // softer
 
     updateAABB();
     rebuildIndicesAndAttributes();
     updateGPU();
+}
+
+void Jelly::dampVel(float factor)
+{
+    for (auto& p : particles)
+    {
+        glm::vec3 v = p.p - p.prev;
+        v *= factor;
+        p.prev = p.p - v;   
+    }
 }
 
 
