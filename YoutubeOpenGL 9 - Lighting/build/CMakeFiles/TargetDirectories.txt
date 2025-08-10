@@ -1,0 +1,3 @@
+/Users/jeffxcal/Desktop/youchengtan.github.io/YoutubeOpenGL 9 - Lighting/build/CMakeFiles/YoutubeOpenGL9Lighting.dir
+/Users/jeffxcal/Desktop/youchengtan.github.io/YoutubeOpenGL 9 - Lighting/build/CMakeFiles/edit_cache.dir
+/Users/jeffxcal/Desktop/youchengtan.github.io/YoutubeOpenGL 9 - Lighting/build/CMakeFiles/rebuild_cache.dir

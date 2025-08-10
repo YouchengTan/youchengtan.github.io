@@ -133,6 +133,8 @@ void Jelly::GenerateCubeMesh()
 
 void Jelly::rebuildIndicesAndAttributes()
 {
+    faceIndexRanges.clear();
+    faceIndexRanges.reserve(6);
     vertices.clear();
     indices.clear();
 
@@ -172,6 +174,8 @@ void Jelly::rebuildIndicesAndAttributes()
                     });
             }
         }
+        GLuint idxStart = (GLuint)indices.size();
+
         for (int v = 0; v < S - 1; ++v) {
             for (int u = 0; u < S - 1; ++u) {
                 GLuint i0 = base + v * S + u;
@@ -181,6 +185,9 @@ void Jelly::rebuildIndicesAndAttributes()
                 indices.insert(indices.end(), { i0,i1,i2,  i0,i2,i3 });
             }
         }
+
+        GLuint count = (GLuint)indices.size() - idxStart;
+        faceIndexRanges.push_back({ idxStart, (GLsizei)count });
     }
 }
 
@@ -327,6 +334,19 @@ void Jelly::Render()
     glDrawElements(GL_TRIANGLES, (GLsizei)indices.size(), GL_UNSIGNED_INT, 0);
     vao.Unbind();
 }
+
+void Jelly::RenderFace(int f)
+{
+    if (f < 0 || f >= (int)faceIndexRanges.size()) return;
+    const auto& range = faceIndexRanges[f];
+
+    vao.Bind();
+    glDrawElements(GL_TRIANGLES, range.second, GL_UNSIGNED_INT,
+                   (void*)(size_t)(range.first * sizeof(GLuint)));
+    vao.Unbind();
+}
+
+
 
 void Jelly::TeleportToCenter(const glm::vec3& newCenter)
 {

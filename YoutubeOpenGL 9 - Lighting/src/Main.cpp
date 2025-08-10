@@ -11,6 +11,8 @@ namespace fs = std::filesystem;
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_inverse.hpp> // 3D drag
+#include <limits>
+
 
 
 #include "Texture.h"
@@ -130,9 +132,29 @@ int main() {
     // Textures (both use sampler "tex0" at unit 0; we bind the one we need before drawing)
     std::string parentDir = (fs::current_path().fs::path::parent_path()).string();
     std::string texPath = "/Resources/";
-    Texture brickTex((parentDir + texPath + "brick.png").c_str(), GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
-    Texture jellyTex((parentDir + texPath + "slime.png").c_str(), GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE, 0.7);
-    brickTex.texUnit(shader, "tex0", 0); // set once; we�ll bind brickTex or jellyTex on unit 0 before draw
+    // jellycat
+    Texture brickTex((parentDir + texPath + "brick.png").c_str(),
+                    GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
+    Texture catFace((parentDir + texPath + "cat.png").c_str(),     GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE, 0.95f);
+    Texture catFur((parentDir + texPath + "catfur.png").c_str(),   GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE, 1.0f);
+
+
+    brickTex.texUnit(shader, "tex0", 0);
+    // Stop wrap/bleed on the cat textures
+    catFace.Bind();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // no mip bleed
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    catFace.Unbind();
+
+    catFur.Bind();
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // no mip bleed
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    catFur.Unbind();
+
 
     // Container (open top)
     Container box;
@@ -144,7 +166,7 @@ int main() {
 
     // Two jelly cubes � lighter mesh + gentle springs (PoC-friendly)
     Jelly j1(glm::vec3(0.00f, 0.70f, 0.00f), 0.35f, glm::vec3(0), glm::vec3(0), 0.10f, 0.020f, 4);
-    Jelly j2(glm::vec3(0.22f, 0.95f, 0.00f), 0.35f, glm::vec3(0), glm::vec3(0), 0.10f, 0.020f, 4);
+    Jelly j2(glm::vec3(0.22f, 0.95f, 0.00f), 0.35f, glm::vec3(0), glm::vec3(0), 0.10f, 0.00f, 4);
 
 
     // Build brick floor and 4 brick walls as world-space quads
@@ -216,7 +238,6 @@ int main() {
     glUniform4f(glGetUniformLocation(lightShader.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 
     shader.Activate();
-    glUniform4f(glGetUniformLocation(shader.ID, "jellyTint"), 1.0f, 1.0f, 1.0f, 0.6f);
     glUniform4f(glGetUniformLocation(shader.ID, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
     glUniform3f(glGetUniformLocation(shader.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
     glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(I));
@@ -224,7 +245,7 @@ int main() {
     glUniform1f(glGetUniformLocation(shader.ID, "jellyWrap"),      0.4f);
     glUniform1f(glGetUniformLocation(shader.ID, "jellySpecular"),  0.7f);
     glUniform1f(glGetUniformLocation(shader.ID, "jellyShininess"), 64.0f);
-    glUniform4f(glGetUniformLocation(shader.ID, "jellyTint"), 0.8f, 1.0f, 0.85f, 0.5f);
+    glUniform4f(glGetUniformLocation(shader.ID, "jellyTint"), 1.0f, 1.0f, 1.0f, 1.0f); // match the alpha above
 
     // Fixed-timestep physics
     double prevTime = glfwGetTime();
@@ -339,10 +360,21 @@ int main() {
 
         // Draw jellies with SLIME texture (same sampler/unit)
         glDisable(GL_CULL_FACE);
-        jellyTex.Bind();
-        j1.Render();
-        j2.Render();
-        jellyTex.Unbind();
+        glCullFace(GL_BACK);
+        glDisable(GL_BLEND);
+        catFace.Bind();
+        j1.RenderFace(0);
+        j2.RenderFace(0);
+        catFace.Unbind();
+        catFur.Bind();
+        for (int f = 1; f < 6; ++f) {
+            j1.RenderFace(f);
+            j2.RenderFace(f);
+        }
+        catFur.Unbind();
+        glEnable(GL_BLEND);
+
+
 
         // Draw light cube
         lightShader.Activate();
@@ -356,7 +388,7 @@ int main() {
 
     // Cleanup
     lightVAO.Delete(); lightVBO.Delete(); lightEBO.Delete();
-    brickTex.Delete(); jellyTex.Delete();
+    brickTex.Delete(); catFace.Delete(); catFur.Delete();
     shader.Delete(); lightShader.Delete();
     glfwDestroyWindow(window);
     glfwTerminate();

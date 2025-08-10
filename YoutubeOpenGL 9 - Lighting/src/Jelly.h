@@ -23,6 +23,8 @@ public:
     void TeleportToCenter(const glm::vec3& newCenter);
 
     void TranslateAll(const glm::vec3& d);
+    void RenderFace(int f);
+
 
 
     // collisions with another jelly (simple AABB push for starters)
@@ -53,7 +55,7 @@ private:
     void GenerateCubeMesh();             // now builds a grid on each face
     void rebuildIndicesAndAttributes();  // indices/uvs/normals for the current grid layout
     void updateGPU();                    // push vertex positions to VBO
-
+    std::vector<std::pair<GLuint, GLsizei>> faceIndexRanges;
     // physics
     void integrate(float dt);
     void satisfyConstraints(int iterations);
