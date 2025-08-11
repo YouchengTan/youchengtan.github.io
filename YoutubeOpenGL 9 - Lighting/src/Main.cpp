@@ -422,6 +422,16 @@ int main() {
         glClearColor(0.12f, 0.05f, 0.10f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Toggle stress heatmap with V key
+        static bool vWasDown = false;
+        int vNow = glfwGetKey(window, GLFW_KEY_V);
+        if (vNow == GLFW_PRESS && !vWasDown) {
+            j1.showStress = !j1.showStress;
+            j2.showStress = !j2.showStress;
+            std::cout << "Stress heatmap: " << (j1.showStress ? "ON" : "OFF") << "\n";
+        }
+        vWasDown = (vNow == GLFW_PRESS);
+
         if (!dragging) camera.Inputs(window);
         camera.updateMatrix(45.0f, 0.1f, 100.0f);
         // LMB press/release detection

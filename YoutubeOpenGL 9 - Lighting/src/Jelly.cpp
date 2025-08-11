@@ -86,6 +86,8 @@ void Jelly::GenerateCubeMesh()
         }
     }
 
+    stress.assign(particles.size(), 0.0f);
+
     auto addSpring = [&](int a, int b, float k) {
         if (a == b) return;
         float rest = glm::length(particles[a].p - particles[b].p);
@@ -226,8 +228,28 @@ void Jelly::rebuildIndicesAndAttributes()
         {{0,-1,0},{1,0,0},{0,0,-1},center + glm::vec3(-half,-half,+half)} // -Y
     };
 
-    const glm::vec3 color(1.0f, 0.2f, 0.6f);
+    //const glm::vec3 color(1.0f, 0.2f, 0.6f);
+    auto heatColor = [](float t)->glm::vec3 {
+        t = std::pow(std::clamp(t, 0.0f, 1.0f), 0.5f);
 
+        if (t < 0.25f) { // blue to cyan
+            float k = t / 0.25f;
+            return glm::vec3(0.0f, k, 1.0f);
+        }
+        else if (t < 0.5f) { // cyan to green
+            float k = (t - 0.25f) / 0.25f;
+            return glm::vec3(0.0f, 1.0f, 1.0f - k);
+        }
+        else if (t < 0.75f) { // green to yellow
+            float k = (t - 0.5f) / 0.25f;
+            return glm::vec3(k, 1.0f, 0.0f);
+        }
+        else { // yellow to red
+            float k = (t - 0.75f) / 0.25f;
+            return glm::vec3(1.0f, 1.0f - k, 0.0f);
+        }
+        };
+   
     for (int f = 0; f < 6; ++f) {
         const auto& fd = fdef[f];
         const GLuint base = (GLuint)(vertices.size() / 11);
@@ -240,6 +262,17 @@ void Jelly::rebuildIndicesAndAttributes()
 
                 float uu = (float)u / (float)(S - 1);
                 float vv = (float)v / (float)(S - 1);
+
+                float st = (pi >= 0 && pi < (int)stress.size()) ? stress[pi] : 0.0f;
+                
+                if (!showStress) {
+                    st = 0.0f;
+                }
+                else {
+                    st *= 5.0f;
+                    if (st > 1.0f) st = 1.0f;
+                }
+                glm::vec3 color = heatColor(st);
 
                 // pos, normal (flat), uv, color
                 vertices.insert(vertices.end(), {
@@ -304,6 +337,12 @@ void Jelly::satisfyConstraints(int iterations)
 
             float len = std::sqrt(l2);
             float c   = (len - s.rest);
+
+            float strain = std::abs(c) / (s.rest + 1e-6f);
+            float s01 = std::min(1.0f, strain * 0.8f);
+            stress[s.i] = std::max(stress[s.i], s01);
+            stress[s.j] = std::max(stress[s.j], s01);
+
             glm::vec3 n = d / len;
 
             float w1 = a.invMass, w2 = b.invMass, wsum = w1 + w2;
@@ -381,11 +420,14 @@ void Jelly::Update(float dt, const Container& box)
     applyGravity();
     integrate(dt);
 
+    for (float& st : stress) st *= 0.92f;
+
     const int iters = 4;
     for (int i = 0; i < iters; ++i) {
         collideWithContainer(box);   // project onto container planes
         satisfyConstraints(2);       // then spring projection
     }
+
     dampVel(0.996f); // softer
 
     updateAABB();

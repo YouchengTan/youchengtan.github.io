@@ -39,6 +39,9 @@ public:
     glm::vec3 getMin() const { return aabbMin; }
     glm::vec3 getMax() const { return aabbMax; }
 
+    // stress heatmap
+    bool showStress = true;
+
 private:
     struct Particle {
         glm::vec3 p;       // current
@@ -83,6 +86,7 @@ private:
     std::vector<Particle> particles;
     std::vector<Spring>   springs;
     int Nx, Ny, Nz;  // grid points per axis for a cube surface lattice (we�ll duplicate for faces)
+    std::vector<float> stress; // stress for viz
 
     int S = 0; // points per edge = springsPerEdge + 1
     std::vector<std::vector<int>> facePointIdx; // 6 faces, each S*S entries
