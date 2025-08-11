@@ -1,0 +1,101 @@
+<html>
+	<head>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=default'></script>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+		<style>
+			h1 {
+				text-align: center;
+			}
+
+			.container {
+				margin: 0 auto;
+				padding: 60px 20%;
+			}
+
+			figure {
+				text-align: center;
+			}
+
+			img {
+				display: inline-block;
+			}
+
+			body {
+				font-family: 'Inter', sans-serif;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+		<h1>Jelly Warrior: Real-Time Soft-Body Simulation</h1>
+		<div style="text-align: center;">Names: Jeffrey Lin, Katrina Zhu, Jiaqi Su, Youcheng Tan</div>
+
+		<br>
+		<a href="https://youchengtan.github.io/Final/index.html">Link to final report</a><br>
+		<a href="https://youchengtan.github.io/Milestone/index.html">Link to milestone report</a><br>
+		<a href="https://youchengtan.github.io/Proposal/index.html">Link to proposal</a><br>
+        <a href="https://docs.google.com/presentation/d/1L-u2iUA-MpvL46bzVJB2LVmLTKtNV6D8XHBQds1IgqI/edit?usp=sharing">Link to milestone Slides</a><br>
+        <a href="https://drive.google.com/file/d/1OcM8gqNmgHnwk72yT1SMjGzQWUh8Fx8G/view?usp=sharing">Link to milestone recording</a><br>
+		<a href="https://youtu.be/45MIykWJ-C4">Link to openGL tutorial</a>
+		<br>
+
+		<!--
+		We've already added one heading per part, to make your write-up as navigable when grading. Please fit your write-up within these sections!
+		-->
+		<h2>Abstract</h2>
+
+		<p>This project implements a real-time soft-body simulation of deformable jelly cubes using OpenGL for rendering and a position-based dynamics (PBD) framework for physics. The simulation supports interactive gravity-driven motion, elastic deformation, and collisions within a container environment. Each jelly cube is modeled as a volumetric mass–spring system with adjustable stiffness, resolution, and damping, enabling tunable material behavior from soft gelatin to rigid structures. The system features accurate broad-phase and narrow-phase collision detection using axis-aligned bounding boxes (AABBs) and particle–plane constraints. Rendering incorporates texture mapping, transparency support, and lighting, producing visually realistic jellies that bounce and deform under physical forces. The modular class design—covering mesh generation, GPU buffer management, camera control, and physics integration.</p>
+		
+		<p>Inspired by homework 4 part 1 and 2, we built an evenly spaced 2d grid of point-masses, linked them with structural, shearing and bending springs, and compute the total spring and damping forces on each mass. We implemented a Verlet integrator under gravity and enforce Provot's 110% stretch constraint.'</p>
+		<h2>Final Results</h2>
+
+        <p>Below is an example of the current program:</p>
+		
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+              <tr>
+				<td style="text-align: center;">
+				  <img src="./images/high.gif" width="400px"/>
+				  <figcaption><i>Collision of two jelly cubes with high spring count</i></figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="./images/low.gif" width="400px"/>
+				  <figcaption><i>Collision of two jelly cubes with low spring count</i></figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<h2>Summary of implemented algorithms</h2>
+
+		<h2>Mass-Spring System Construction</h2>
+		<p>On each jelly, springs uniformly connect point mass on each face in a grid pattern and the diagonals on each face, the springs also connect opposing vertices as well as faces to prevent "pancaking"</p>
+
+		<h2>Verlet Integration</h2>
+		<p>Using Verlet Integration we updates the mass positions over time in a stable way without explict velocities, particles' positions are stored as p-current and p-previous, new positions are calculated as p-new = p-cur + (p-cur - p-prev) + a * dt^2, where (p-cur - p-prev) serves as implict velocity.</p>
+
+		<h2>Constraint Satisfaction (Position-Based Dynamics)</h2>
+		<p>We looped over all springs in the jelly to satisfy the spring constraint of |Pa - Pb| = rest length, where the correction to mass positions are weighted by the inverse of their mass, the correction is calculated multiple times per frame for convergence.</p>
+
+		<h2>Collision Detection</h2>
+		<p>Collosion with the ground is done by clamping between particle positions and z-coordinate of the ground, collision between jellies is done by the axis-aligned bounding-box algorithm, where each time a jelly's position is being updated, its bounding box is updated with its new min and max particle position, the collision is detected by checking against the other jelly's bounding box for overlapping interval. After a collision is detected the program then decides which shortest direction to push the jelly in to reslove collision. This is O(1) time and gets the job done.</p>
+
+		<h2>Mouse Ray Jelly Dragging</h2>
+		<p></p>
+
+		<h2>...</h2>
+		<p></p>
+
+		<h2>Resources</h2>
+		<a href=https://matthias-research.github.io/pages/tenMinutePhysics/13-softBody.html>“Ten Minute Physics – Soft Body Simulation”</a><br>
+		Game Physics Engine Development by Ian Millington (Chapter 16: Soft Bodies)<br>
+		<a href=https://www.shadertoy.com/results?query=jelly>ShaderToy Jelly Shader Examples:</a><br>
+		<a href=https://www.youtube.com/watch?v=iBI_WA4CXi8>Steve Final Smash – Softbody Simulation</a><br>
+		<a href=https://www.youtube.com/shorts/feRWIC1qiaw>Jelly Simulation Short</a><br>
+		<a href=https://github.com/jiripospisil/SoftBodyPhysics>SoftBodyPhysics</a><br>
+		<a href=https://github.com/erincatto/box2d>Box2D (for collision inspiration)</a><br>
+
+
+		</div>
+	</body>
+</html>
