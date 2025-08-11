@@ -26,8 +26,14 @@ uniform vec3  fogColor;        // fog color (vec3)
 uniform float fogStart;        // distance where fog starts
 uniform float fogEnd;          // distance where fog is full
 
+uniform int isShadowPass;
+
 void main()
 {
+    if (isShadowPass == 1) {
+        FragColor = vec4(0.0, 0.0, 0.0, 0.40);
+        return;
+    }
     // Inputs
     vec3 N = normalize(Normal);
     vec3 L = normalize(lightPos - crntPos);

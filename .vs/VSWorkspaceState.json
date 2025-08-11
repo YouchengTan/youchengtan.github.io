@@ -1,8 +1,9 @@
 {
   "ExpandedNodes": [
     "",
-    "\\YoutubeOpenGL 9 - Lighting"
+    "\\YoutubeOpenGL 9 - Lighting",
+    "\\YoutubeOpenGL 9 - Lighting\\src"
   ],
-  "SelectedNode": "\\YoutubeOpenGL 9 - Lighting\\YoutubeOpenGL.sln",
+  "SelectedNode": "\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.cpp",
   "PreviewInSolutionExplorer": false
 }

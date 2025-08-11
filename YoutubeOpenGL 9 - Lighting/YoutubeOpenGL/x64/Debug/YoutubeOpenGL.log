@@ -1,5 +1,5 @@
-﻿  Jelly.cpp
-D:\CS184\youchengtan.github.io\YoutubeOpenGL 9 - Lighting\src\Jelly.cpp(1,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
+﻿  Main.cpp
+D:\CS184\youchengtan.github.io\YoutubeOpenGL 9 - Lighting\src\Main.cpp(1,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
   YoutubeOpenGL.vcxproj -> D:\CS184\youchengtan.github.io\YoutubeOpenGL 9 - Lighting\x64\Debug\YoutubeOpenGL.exe
   'pwsh.exe' is not recognized as an internal or external command,
   operable program or batch file.
