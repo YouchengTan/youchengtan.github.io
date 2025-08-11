@@ -145,7 +145,7 @@ void Jelly::GenerateCubeMesh()
     const int c_xp_yp_zn = idx(1, 0, S - 1);
 
     // Softer than surface/body springs
-    const float vertexK = springStrength * 0.45f; // try 0.35–0.6
+    const float vertexK = springStrength * 0.45f; // try 0.35ï¿½0.6
 
     auto addSoftSpring = [&](int a, int b, float k) {
         if (a == b) return;
@@ -182,7 +182,7 @@ void Jelly::GenerateCubeMesh()
     const int xp_yn_zn_y = idx(5, S - 1, S - 1);
     const int xn_yn_zn_y = idx(5, 0, S - 1);
 
-    // Softer than body springs (tune 0.35–0.6)
+    // Softer than body springs (tune 0.35ï¿½0.6)
     const float axisVertexK = springStrength * 0.45f;
 
     // ===== Across X: (-x,*,*) <-> (+x,*,*) =====
@@ -479,27 +479,81 @@ void Jelly::CollideWith(Jelly& other)
     glm::vec3 amin = getMin(), amax = getMax();
     glm::vec3 bmin = other.getMin(), bmax = other.getMax();
     bool overlap = (amin.x <= bmax.x && amax.x >= bmin.x) &&
-        (amin.y <= bmax.y && amax.y >= bmin.y) &&
-        (amin.z <= bmax.z && amax.z >= bmin.z);
+                   (amin.y <= bmax.y && amax.y >= bmin.y) &&
+                   (amin.z <= bmax.z && amax.z >= bmin.z);
     if (!overlap) return;
 
-    glm::vec3 aCenter = 0.5f * (amin + amax);
-    glm::vec3 bCenter = 0.5f * (bmin + bmax);
-    glm::vec3 delta = aCenter - bCenter;
-    if (glm::length2(delta) < 1e-12f) delta = glm::vec3(0, 1, 0);
     glm::vec3 pen(
         std::min(amax.x - bmin.x, bmax.x - amin.x),
         std::min(amax.y - bmin.y, bmax.y - amin.y),
         std::min(amax.z - bmin.z, bmax.z - amin.z)
     );
-    if (pen.x <= pen.y && pen.x <= pen.z) delta = glm::vec3(delta.x > 0 ? 1 : -1, 0, 0);
-    else if (pen.y <= pen.x && pen.y <= pen.z) delta = glm::vec3(0, delta.y > 0 ? 1 : -1, 0);
-    else delta = glm::vec3(0, 0, delta.z > 0 ? 1 : -1);
+    float mpen = std::min(std::min(pen.x, pen.y), pen.z);
 
-    const float push = 0.5f * std::min(std::min(pen.x, pen.y), pen.z);
-    for (auto& p : particles)        p.p += delta * push * 0.5f;
-    for (auto& p : other.particles)  p.p -= delta * push * 0.5f;
-    updateAABB(); other.updateAABB();
+    glm::vec3 aC = 0.5f * (amin + amax);
+    glm::vec3 bC = 0.5f * (bmin + bmax);
+    Jelly* top    = (aC.y >= bC.y) ? this : &other;
+    Jelly* bottom = (aC.y >= bC.y) ? &other : this;
+
+    // center of mass
+    auto comOf = [](const std::vector<Particle>& pts)->glm::vec3 {
+        double sumw = 0.0;
+        glm::dvec3 c(0.0);
+        for (const auto& p : pts) {
+            double w = (p.invMass > 0.0f) ? 1.0 / double(p.invMass) : 0.0;
+            c += glm::dvec3(p.p) * w; sumw += w;
+        }
+        if (sumw > 0.0) c /= sumw;
+        return glm::vec3(c);
+    };
+    glm::vec3 comTop = comOf(top->particles);
+
+    // AABB to XZ coord
+    float ox0 = std::max(amin.x, bmin.x);
+    float ox1 = std::min(amax.x, bmax.x);
+    float oz0 = std::max(amin.z, bmin.z);
+    float oz1 = std::min(amax.z, bmax.z);
+    float ow  = std::max(0.0f, ox1 - ox0);
+    float od  = std::max(0.0f, oz1 - oz0);
+
+    // Distance of top 
+    auto clampf32 = [](float x, float a, float b){ return std::max(a, std::min(b, x)); };
+    glm::vec2 proj(comTop.x, comTop.z);
+    glm::vec2 clamped(clampf32(proj.x, ox0, ox1), clampf32(proj.y, oz0, oz1));
+    glm::vec2 outside = proj - clamped;
+    float distOutside = glm::length(outside);
+
+    // tipping
+    float halfMin = 0.5f * std::min(ow, od);
+    bool tipping = (halfMin > 0.0f) && (distOutside > 0.15f * halfMin);
+
+    if (tipping) {
+
+        glm::vec2 dir2 = (distOutside > 1e-6f) ? (outside / distOutside)
+                                               : glm::normalize(glm::vec2(comTop.x - bC.x, comTop.z - bC.z));
+        if (!std::isfinite(dir2.x)) dir2 = glm::vec2(1, 0);
+
+        glm::vec3 tipDir(dir2.x, -0.05f, dir2.y);
+
+        glm::vec3 dTop = tipDir * (0.65f * mpen);
+        glm::vec3 dBot = -tipDir * (0.15f * mpen);
+
+        for (auto& p : top->particles)    { p.p += dTop; p.prev += dTop; }
+        for (auto& p : bottom->particles) { p.p += dBot; p.prev += dBot; }
+    } else {
+        glm::vec3 axis(0.0f);
+        glm::vec3 delta = aC - bC;
+        if (glm::length2(delta) < 1e-12f) delta = glm::vec3(0,1,0);
+
+        if (pen.x <= pen.y && pen.x <= pen.z) axis = glm::vec3(delta.x > 0 ? 1.f : -1.f, 0, 0);
+        else if (pen.y <= pen.x && pen.y <= pen.z) axis = glm::vec3(0, delta.y > 0 ? 1.f : -1.f, 0);
+        else axis = glm::vec3(0, 0, delta.z > 0 ? 1.f : -1.f);
+
+        glm::vec3 d = axis * (0.5f * mpen);
+        for (auto& p : particles)       p.p += 0.5f * d;
+        for (auto& p : other.particles) p.p -= 0.5f * d;
+    }
+
+    updateAABB();
+    other.updateAABB();
 }
-
-
