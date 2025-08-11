@@ -1,1 +1,20 @@
-.vs/
+.vs/# Build / CMake
+**/build/
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake-build-*/
+Makefile
+*.o
+*.obj
+*.d
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+*.exe
+# OS/IDE
+.DS_Store
+.idea/
+.vscode/

@@ -12,6 +12,9 @@ namespace fs = std::filesystem;
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_inverse.hpp> // 3D drag
 #include <limits>
+#include <glm/gtc/constants.hpp>
+#include <cmath>
+
 
 
 
@@ -76,7 +79,7 @@ static Ray mouseRay(double mx, double my, int fbW, int fbH, const Camera& cam) {
     return r;
 }
 
-// helpers for 3D drag
+// drag
 static bool rayAABB(const Ray& r, const glm::vec3& bmin, const glm::vec3& bmax, float& tHit) {
     glm::vec3 t1 = (bmin - r.o) / r.d;
     glm::vec3 t2 = (bmax - r.o) / r.d;
@@ -87,6 +90,64 @@ static bool rayAABB(const Ray& r, const glm::vec3& bmin, const glm::vec3& bmax, 
     if (t1f >= t0 && t1f > 0.0f) { tHit = (t0 > 0.0f) ? t0 : t1f; return true; }
     return false;
 }
+
+struct SphereGeo {
+    std::vector<GLfloat> v;
+    std::vector<GLuint>  i;
+    VAO vao; VBO* vbo = nullptr; EBO* ebo = nullptr;
+
+    void build(int stacks = 24, int slices = 36) {
+        v.clear(); i.clear(); v.reserve((stacks+1)*(slices+1)*11);
+        for (int y = 0; y <= stacks; ++y) {
+            float v01  = (float)y / (float)stacks;
+            float phi  = v01 * glm::pi<float>();
+            float cph  = std::cos(phi), sph = std::sin(phi);
+            for (int x = 0; x <= slices; ++x) {
+                float u01   = (float)x / (float)slices;
+                float theta = u01 * glm::two_pi<float>();
+                float cth   = std::cos(theta), sth = std::sin(theta);
+                glm::vec3 n = glm::vec3(cth * sph, cph, sth * sph);   // unit normal
+                glm::vec3 p = n;                                      // unit sphere
+                float u = u01, vtex = 1.0f - v01;
+                glm::vec3 col(1.0f); 
+                v.insert(v.end(), { p.x,p.y,p.z,  n.x,n.y,n.z,  u,vtex,  col.x,col.y,col.z });
+            }
+        }
+        int row = slices + 1;
+        for (int y = 0; y < stacks; ++y) {
+            for (int x = 0; x < slices; ++x) {
+                GLuint i0 = y * row + x;
+                GLuint i1 = i0 + 1;
+                GLuint i2 = i0 + row + 1;
+                GLuint i3 = i0 + row;
+                i.insert(i.end(), { i0,i1,i2,  i0,i2,i3 });
+            }
+        }
+        vao.Bind();
+        vbo = new VBO(v.data(), (GLsizeiptr)(v.size() * sizeof(GLfloat)));
+        ebo = new EBO(i.data(), (GLsizeiptr)(i.size() * sizeof(GLuint)));
+        vao.LinkAttrib(*vbo, 0, 3, GL_FLOAT, 11 * sizeof(float), (void*)0);                 // pos
+        vao.LinkAttrib(*vbo, 1, 3, GL_FLOAT, 11 * sizeof(float), (void*)(3 * sizeof(float)));// normal
+        vao.LinkAttrib(*vbo, 2, 2, GL_FLOAT, 11 * sizeof(float), (void*)(6 * sizeof(float)));// uv
+        vao.LinkAttrib(*vbo, 3, 3, GL_FLOAT, 11 * sizeof(float), (void*)(8 * sizeof(float)));// color
+        vao.Unbind(); if (vbo) vbo->Unbind(); if (ebo) ebo->Unbind();
+    }
+    void draw() { vao.Bind(); glDrawElements(GL_TRIANGLES, (GLsizei)i.size(), GL_UNSIGNED_INT, 0); vao.Unbind(); }
+};
+
+struct Body {
+    float radius;        
+    float orbit;         
+    float speed;         
+    glm::vec3 color;     
+    float phase;         
+};
+
+// model matrix
+static inline glm::mat4 TRS(const glm::vec3& t, float s) {
+    return glm::scale(glm::translate(glm::mat4(1.0f), t), glm::vec3(s));
+}
+
 
 int main() {
     // Init GLFW / context
@@ -154,12 +215,34 @@ int main() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); // no mip bleed
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     catFur.Unbind();
+    GLuint whiteTex = 0;
+    {
+        glGenTextures(1, &whiteTex);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, whiteTex);
+        unsigned int px = 0xFFFFFFFF; // RGBA white
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &px);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 
+    //solar cat
+    SphereGeo sphere;
+    sphere.build(24, 36);
+    glm::vec3 solarCenter(0.0f, 1.45f, 0.0f);
+    Body sun { 0.12f, 0.00f, 0.00f, glm::vec3(1.00f, 0.95f, 0.30f), 0.0f };
+    std::vector<Body> planets = {
+        { 0.045f, 0.36f, 1.20f, glm::vec3(0.70f, 0.70f, 0.85f), 0.00f },
+        { 0.055f, 0.54f, 0.80f, glm::vec3(0.95f, 0.55f, 0.20f), 0.60f },
+        { 0.065f, 0.78f, 0.55f, glm::vec3(0.25f, 0.65f, 1.00f), 1.10f },
+    };
 
-    // Container (open top)
     Container box;
     box.min = glm::vec3(-2.0f, 0.0f, -2.0f);
     box.max = glm::vec3(+2.0f, 2.4f, +2.0f);
+
+
 
     box.restitution = 0.25f;
     box.friction = 0.6f;
@@ -328,9 +411,6 @@ int main() {
         accumulator += (t - prevTime);
         prevTime = t;
 
-        // fun: space bar to "punch" both jelly cubes
-        // if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) { j1.apply_punch(); j2.apply_punch(); }
-
         while (accumulator >= fixedDt) {
             j1.Update((float)fixedDt, box);
             j2.Update((float)fixedDt, box);
@@ -374,6 +454,71 @@ int main() {
         catFur.Unbind();
         glEnable(GL_BLEND);
 
+        //solar
+// --- solar ---
+shader.Activate();
+camera.Matrix(shader, "camMatrix");
+
+// bind WHITE texture so tint is pure color (no bricks)
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, whiteTex);
+
+// make them a bit emissive-looking: kill spec for this pass
+GLint specLoc = glGetUniformLocation(shader.ID, "jellySpecular");
+GLint wrapLoc = glGetUniformLocation(shader.ID, "jellyWrap");
+GLint modelLoc = glGetUniformLocation(shader.ID, "model");
+GLint tintLoc  = glGetUniformLocation(shader.ID, "jellyTint");
+
+// save old values by just restoring after (we know defaults used below)
+glUniform1f(specLoc, 0.0f);
+glUniform1f(wrapLoc, 0.0f);
+
+// Sun (solid)
+    {
+        glm::mat4 M = TRS(solarCenter, sun.radius);
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(M));
+        glUniform4f(tintLoc, sun.color.r, sun.color.g, sun.color.b, 1.0f);
+        sphere.draw();
+
+        // Sun halo (additive)
+        glBlendFunc(GL_ONE, GL_ONE);
+        glm::mat4 Mh = TRS(solarCenter, sun.radius * 1.8f);
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Mh));
+        glUniform4f(tintLoc, sun.color.r, sun.color.g, sun.color.b, 0.12f);
+        sphere.draw();
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
+
+    // Planets
+    double tsec = glfwGetTime();
+    for (const Body& b : planets) {
+        float ang = b.phase + (float)tsec * b.speed;
+        glm::vec3 p = solarCenter + glm::vec3(std::cos(ang) * b.orbit, 0.0f, std::sin(ang) * b.orbit);
+
+        // solid pass
+        glm::mat4 M = TRS(p, b.radius);
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(M));
+        glUniform4f(tintLoc, b.color.r, b.color.g, b.color.b, 1.0f);
+        sphere.draw();
+
+        // glow pass
+        glBlendFunc(GL_ONE, GL_ONE);
+        glm::mat4 Mh = TRS(p, b.radius * 1.35f);
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Mh));
+        glUniform4f(tintLoc, b.color.r, b.color.g, b.color.b, 0.08f);
+        sphere.draw();
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
+
+    // restore shader params for the rest of the scene
+    glUniform1f(specLoc, 0.7f);
+    glUniform1f(wrapLoc, 0.4f);
+    glUniform4f(tintLoc, 1.0f, 1.0f, 1.0f, 1.0f);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+        //end solar
+
+
 
 
         // Draw light cube
@@ -387,6 +532,7 @@ int main() {
     }
 
     // Cleanup
+    glDeleteTextures(1, &whiteTex);
     lightVAO.Delete(); lightVBO.Delete(); lightEBO.Delete();
     brickTex.Delete(); catFace.Delete(); catFur.Delete();
     shader.Delete(); lightShader.Delete();
