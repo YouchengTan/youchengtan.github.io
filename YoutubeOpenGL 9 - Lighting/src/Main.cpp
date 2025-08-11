@@ -1,4 +1,3 @@
-//------- Ignore this ----------
 #include <filesystem>
 namespace fs = std::filesystem;
 //------------------------------
@@ -14,7 +13,8 @@ namespace fs = std::filesystem;
 #include <limits>
 #include <glm/gtc/constants.hpp>
 #include <cmath>
-
+#include <random>
+#include <glm/common.hpp>
 
 
 
@@ -143,9 +143,37 @@ struct Body {
     float phase;         
 };
 
+// heled functino of random firefly color
+static glm::vec3 hsv2rgb(float h, float s, float v) {
+    h = glm::fract(h) * 6.0f;
+    int i = (int)std::floor(h);
+    float f = h - i;
+    float p = v * (1.0f - s);
+    float q = v * (1.0f - s * f);
+    float t = v * (1.0f - s * (1.0f - f));
+    switch (i % 6) {
+        case 0: return {v, t, p};
+        case 1: return {q, v, p};
+        case 2: return {p, v, t};
+        case 3: return {p, q, v};
+        case 4: return {t, p, v};
+        default:return {v, p, q};
+    }
+}
+
+// visuals no physics
+struct Pebble { glm::vec3 pos; float r; glm::vec3 color; };
+struct Firefly { glm::vec3 pos; float r; float phase; glm::vec3 color; };
+std::vector<Pebble> pebbles;
+std::vector<Firefly> fireflies;
+
 // model matrix
 static inline glm::mat4 TRS(const glm::vec3& t, float s) {
     return glm::scale(glm::translate(glm::mat4(1.0f), t), glm::vec3(s));
+}
+// shadow for fireflies and pebbles 
+static inline glm::mat4 TRS3(const glm::vec3& t, const glm::vec3& s) {
+    return glm::scale(glm::translate(glm::mat4(1.0f), t), s);
 }
 
 
@@ -175,7 +203,7 @@ int main() {
     Camera camera(width, height, glm::vec3(0.0f, 0.5f, 0.9f));
 
     // Light
-    glm::vec4 lightColor = glm::vec4(1, 1, 1, 1);
+    glm::vec4 lightColor = glm::vec4(1.00f, 0.86f, 0.72f, 1.0f);   // just to make more romantic btw
     glm::vec3 lightPos = glm::vec3(0.8f, 1.0f, 0.8f);
     // Tiny light cube geo
     GLfloat lightVerts[] = { -0.05f,-0.05f, 0.05f, -0.05f,-0.05f,-0.05f, 0.05f,-0.05f,-0.05f, 0.05f,-0.05f, 0.05f,
@@ -231,12 +259,61 @@ int main() {
     SphereGeo sphere;
     sphere.build(24, 36);
     glm::vec3 solarCenter(0.0f, 1.45f, 0.0f);
-    Body sun { 0.12f, 0.00f, 0.00f, glm::vec3(1.00f, 0.95f, 0.30f), 0.0f };
+    Body sun { 0.12f, 0.00f, 0.00f, glm::vec3(1.05f, 0.75f, 0.45f), 0.0f };
     std::vector<Body> planets = {
-        { 0.045f, 0.36f, 1.20f, glm::vec3(0.70f, 0.70f, 0.85f), 0.00f },
-        { 0.055f, 0.54f, 0.80f, glm::vec3(0.95f, 0.55f, 0.20f), 0.60f },
-        { 0.065f, 0.78f, 0.55f, glm::vec3(0.25f, 0.65f, 1.00f), 1.10f },
+        { 0.045f, 0.36f, 1.20f, glm::vec3(0.95f, 0.70f, 0.75f), 0.00f }, // blush
+        { 0.055f, 0.54f, 0.80f, glm::vec3(0.98f, 0.80f, 0.60f), 0.60f }, // peach
+        { 0.065f, 0.78f, 0.55f, glm::vec3(0.80f, 0.65f, 0.95f), 1.10f }, // lavender
     };
+
+    // randomly generate pebbles and butterflies
+    std::mt19937 rng(12345);
+    std::uniform_real_distribution<float> u01(0.0f, 1.0f);
+    std::uniform_real_distribution<float> uTheta(0.0f, glm::two_pi<float>());
+    std::uniform_real_distribution<float> urPeb(0.020f, 0.045f);  // size
+    std::uniform_real_distribution<float> redVar(0.0f, 0.15f);    // slight hue shift
+
+    pebbles.clear();
+    const float pebbleAreaRadius = 20.0f; // floor coverage
+    const int   pebbleCount      = 800;   // more pebbles for the bigger area
+
+    for (int i = 0; i < pebbleCount; ++i) {
+        float r  = pebbleAreaRadius * std::sqrt(u01(rng));  // uniform dosl
+        float th = uTheta(rng);
+        glm::vec3 p(r * std::cos(th), 0.012f, r * std::sin(th)); // increase z, avoid problems
+        glm::vec3 c(1.0f, 0.10f + redVar(rng), 0.10f + 0.5f*redVar(rng)); // red
+        pebbles.push_back({ p, urPeb(rng), c });
+    }
+
+    // a ridiculous number of fireflies lmao, even more ridulous now
+    fireflies.clear();
+
+    const int   fireflyCount = 500;         
+    const float fireflyMinY  = 0.8f;
+    const float fireflyMaxY  = 1.6f;
+
+    std::uniform_real_distribution<float> uHeight(fireflyMinY, fireflyMaxY);
+    std::uniform_real_distribution<float> uPhase(0.0f, glm::two_pi<float>());
+    std::uniform_real_distribution<float> uRadius(0.012f, 0.022f);
+    // to get random color fireflies bias toward warmer colors
+    auto randHueRomantic = [&]() {
+        float r = u01(rng);
+        return (r < 0.6f) ? (0.00f + (r/0.6f)*0.12f)        
+                        : (0.83f + ((r-0.6f)/0.4f)*0.17f); 
+    };
+    std::uniform_real_distribution<float> uSat(0.55f, 0.85f);
+    std::uniform_real_distribution<float> uVal(0.92f, 1.00f);
+
+
+    for (int i = 0; i < fireflyCount; ++i) {
+        float rr = pebbleAreaRadius * std::sqrt(u01(rng));
+        float th = uTheta(rng);
+        glm::vec3 pos(rr * std::cos(th), uHeight(rng), rr * std::sin(th));
+
+        glm::vec3 col = hsv2rgb(randHueRomantic(), uSat(rng), uVal(rng));
+        fireflies.push_back({ pos, uRadius(rng), uPhase(rng), col });
+    }
+
 
     Container box;
     box.min = glm::vec3(-2.0f, 0.0f, -2.0f);
@@ -325,6 +402,11 @@ int main() {
     glUniform3f(glGetUniformLocation(shader.ID, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
     glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(I));
 
+     // romantic fog setup (vec3 color)
+    glUniform3f(glGetUniformLocation(shader.ID, "fogColor"), 0.12f, 0.05f, 0.10f);
+    glUniform1f(glGetUniformLocation(shader.ID, "fogStart"), 8.0f);
+    glUniform1f(glGetUniformLocation(shader.ID, "fogEnd"),   40.0f);
+
     glUniform1f(glGetUniformLocation(shader.ID, "jellyWrap"),      0.4f);
     glUniform1f(glGetUniformLocation(shader.ID, "jellySpecular"),  0.7f);
     glUniform1f(glGetUniformLocation(shader.ID, "jellyShininess"), 64.0f);
@@ -337,7 +419,7 @@ int main() {
 
     while (!glfwWindowShouldClose(window)) { // render loo entrance
         glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
-        glClearColor(0.07f, 0.13f, 0.17f, 1.0f);
+        glClearColor(0.12f, 0.05f, 0.10f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         if (!dragging) camera.Inputs(window);
@@ -427,6 +509,8 @@ int main() {
         shader.Activate();
         glUniform3f(glGetUniformLocation(shader.ID, "camPos"), camera.Position.x, camera.Position.y, camera.Position.z);
         camera.Matrix(shader, "camMatrix");
+        glUniform1f(glGetUniformLocation(shader.ID, "fogAmount"), 0.85f);
+
 
         // Draw floor & walls with BRICK texture
         brickTex.Bind();                 // unit 0; shader uses sampler "tex0"
@@ -484,17 +568,34 @@ glUniform1f(wrapLoc, 0.0f);
         glBlendFunc(GL_ONE, GL_ONE);
         glm::mat4 Mh = TRS(solarCenter, sun.radius * 1.8f);
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Mh));
-        glUniform4f(tintLoc, sun.color.r, sun.color.g, sun.color.b, 0.12f);
+        glUniform4f(tintLoc, sun.color.r, sun.color.g, sun.color.b, 0.20f);
         sphere.draw();
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        {
+            float s = sun.radius * 3.0f;
+            glm::vec3 sp(solarCenter.x, 0.001f, solarCenter.z);
+            glm::mat4 Ms = TRS3(sp, glm::vec3(s, 0.01f, s));  // squash on Y
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Ms));
+            glUniform4f(tintLoc, 0.0f, 0.0f, 0.0f, 0.18f);
+            sphere.draw();
+        }
     }
 
     // Planets
     double tsec = glfwGetTime();
+    glUniform1f(glGetUniformLocation(shader.ID, "fogAmount"), 0.35f);
     for (const Body& b : planets) {
         float ang = b.phase + (float)tsec * b.speed;
         glm::vec3 p = solarCenter + glm::vec3(std::cos(ang) * b.orbit, 0.0f, std::sin(ang) * b.orbit);
 
+        {
+            float s = b.radius * 1.6f;
+            glm::vec3 sp(p.x, 0.001f, p.z);
+            glm::mat4 Ms = TRS3(sp, glm::vec3(s, 0.01f, s));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Ms));
+            glUniform4f(tintLoc, 0.0f, 0.0f, 0.0f, 0.22f);
+            sphere.draw();
+        }
         // solid pass
         glm::mat4 M = TRS(p, b.radius);
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(M));
@@ -505,7 +606,50 @@ glUniform1f(wrapLoc, 0.0f);
         glBlendFunc(GL_ONE, GL_ONE);
         glm::mat4 Mh = TRS(p, b.radius * 1.35f);
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Mh));
-        glUniform4f(tintLoc, b.color.r, b.color.g, b.color.b, 0.08f);
+        glUniform4f(tintLoc, b.color.r, b.color.g, b.color.b, 0.14f);
+        sphere.draw();
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
+    glUniform1f(glGetUniformLocation(shader.ID, "fogAmount"), 0.85f);
+
+
+    //pebbles
+    glUniform1f(specLoc, 0.6f);
+    glUniform1f(wrapLoc, 0.3f);
+    for (const auto& pb : pebbles) {
+    glm::mat4 M = TRS(pb.pos, pb.r);
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(M));
+    glUniform4f(tintLoc, pb.color.r, pb.color.g, pb.color.b, 1.0f);
+    sphere.draw();
+    }
+    //fireflies
+    tsec = glfwGetTime();
+    for (const auto& f : fireflies) {
+        glm::vec3 p = f.pos + glm::vec3(0.0f, 0.07f * std::sin(2.0f * (float)tsec + f.phase), 0.0f);
+
+        {
+            float s = f.r * 3.2f;
+            glm::vec3 sp(p.x, 0.001f, p.z);
+            glUniform1f(specLoc, 0.0f);
+            glUniform1f(wrapLoc, 0.0f);
+            glm::mat4 Ms = TRS3(sp, glm::vec3(s, 0.01f, s));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Ms));
+            glUniform4f(tintLoc, 0.0f, 0.0f, 0.0f, 0.15f);
+            sphere.draw();
+            glUniform1f(specLoc, 0.6f);
+            glUniform1f(wrapLoc, 0.3f);
+        }
+        // solid core
+        glm::mat4 M = TRS(p, f.r);
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(M));
+        glUniform4f(tintLoc, f.color.r, f.color.g, f.color.b, 1.0f);
+        sphere.draw();
+
+        // additive halo
+        glBlendFunc(GL_ONE, GL_ONE);
+        glm::mat4 Mh = TRS(p, f.r * 2.1f);
+        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Mh));
+        glUniform4f(tintLoc, f.color.r, f.color.g, f.color.b, 0.50f);
         sphere.draw();
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
@@ -540,3 +684,5 @@ glUniform1f(wrapLoc, 0.0f);
     glfwTerminate();
     return 0;
 }
+
+
