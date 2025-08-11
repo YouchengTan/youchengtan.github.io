@@ -166,6 +166,34 @@ struct Pebble { glm::vec3 pos; float r; glm::vec3 color; };
 struct Firefly { glm::vec3 pos; float r; float phase; glm::vec3 color; };
 std::vector<Pebble> pebbles;
 std::vector<Firefly> fireflies;
+// shockwave
+struct Ring { glm::vec3 p; float t; float seed; };
+std::vector<Ring> rings;
+struct Ember { glm::vec3 p, v; float t, life, r; };
+std::vector<Ember> embers;
+//more emberry effect
+struct Scorch { glm::vec3 p; float t, life, r; float rot; };
+std::vector<Scorch> scorches;
+struct Smoke { glm::vec3 p, v; float t, life, r; };
+std::vector<Smoke> smokes;
+
+float timeScale   = 1.0f;
+float slowmoTimer = 0.0f;
+float shakeTimer  = 0.0f;
+
+//meteor jelly cats start
+struct Meteor {
+    Jelly j;
+    glm::vec4 tint;
+    glm::vec3 lastCenter;
+    float stillTime = 0.0f;
+    //shockwave
+    bool impacted = false;
+    Meteor(const Jelly& jj, const glm::vec4& tt) : j(jj), tint(tt), lastCenter(jj.center) {}
+};
+
+std::vector<Meteor> meteors;
+// meteor jelly cats end
 
 // model matrix
 static inline glm::mat4 TRS(const glm::vec3& t, float s) {
@@ -314,15 +342,34 @@ int main() {
         fireflies.push_back({ pos, uRadius(rng), uPhase(rng), col });
     }
 
+    // meteor drag
+    double nextMeteorAt = glfwGetTime() + 2.0;
+
+
 
     Container box;
     box.min = glm::vec3(-2.0f, 0.0f, -2.0f);
     box.max = glm::vec3(+2.0f, 2.4f, +2.0f);
-
-
-
-    box.restitution = 0.25f;
+    box.restitution = 0.35f;
     box.friction = 0.6f;
+        auto spawnMeteor = [&](float yDrop){
+
+    // meteor spawn
+    std::uniform_real_distribution<float> uXZ(box.min.x * 0.8f, box.max.x * 0.8f);
+    glm::vec3 c(uXZ(rng), yDrop, uXZ(rng));
+    float half = 0.16f;                          
+    glm::vec3 v0(0.0f, -3.5f, 0.0f);              // falling velocity
+    glm::vec3 w0(0.0f);                           // no spin
+    float k = 0.10f, damp = 0.020f;               
+    int   res = 3;
+
+    float h = randHueRomantic();
+    glm::vec3 rgb = hsv2rgb(h, uSat(rng), uVal(rng));
+    glm::vec4 tint(rgb, 1.0f);
+
+    Jelly mj(c, half, v0, w0, k, damp, res);
+    meteors.emplace_back(mj, tint);
+    };
 
     // Two jelly cubes � lighter mesh + gentle springs (PoC-friendly)
     Jelly j1(glm::vec3(0.00f, 0.70f, 0.00f), 0.35f, glm::vec3(0), glm::vec3(0), 0.10f, 0.020f, 4);
@@ -415,7 +462,7 @@ int main() {
     // Fixed-timestep physics
     double prevTime = glfwGetTime();
     double accumulator = 0.0;
-    const double fixedDt = 1.0 / 120.0;
+    const double fixedDt = 1.0 / 90.0;
 
     while (!glfwWindowShouldClose(window)) { // render loo entrance
         glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
@@ -433,7 +480,25 @@ int main() {
         vWasDown = (vNow == GLFW_PRESS);
 
         if (!dragging) camera.Inputs(window);
+        // handles meteor cat
+        static bool mWasDown = false;
+        int mNow = glfwGetKey(window, GLFW_KEY_M);
+        if (mNow == GLFW_PRESS && !mWasDown) { spawnMeteor(box.max.y + 0.8f); }
+        mWasDown = (mNow == GLFW_PRESS);
+        // camera.updateMatrix(45.0f, 0.1f, 100.0f); //regular camera
+        glm::vec3 savedPos = camera.Position;
+        if (shakeTimer > 0.0f) {
+            float s = 0.04f * (shakeTimer / 0.25f); // camera shakes decay
+            auto jitter = [&](float a){ return (u01(rng) - 0.5f) * 2.0f * a; };
+            camera.Position += glm::vec3(jitter(s), jitter(s * 0.2f), jitter(s));
+        }
         camera.updateMatrix(45.0f, 0.1f, 100.0f);
+        camera.Position = savedPos;
+        if (glfwGetTime() > nextMeteorAt && meteors.size() < 4) {
+            spawnMeteor(box.max.y + 0.8f);
+            nextMeteorAt = glfwGetTime() + 3.5; // every 2.25 secnds
+        }
+
         // LMB press/release detection
         bool down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
 
@@ -504,14 +569,98 @@ int main() {
         prevTime = t;
 
         while (accumulator >= fixedDt) {
-            j1.Update((float)fixedDt, box);
-            j2.Update((float)fixedDt, box);
+            float dt = (float)(fixedDt * timeScale); // one line shockwave
+            j1.Update(dt, box);
+            j2.Update(dt, box);
             j1.CollideWith(j2);
+            //meteor (1st for is with jelly, 2nd is inter-meteor)
+            for (auto& m : meteors) {
+                m.j.Update(dt, box);
+                // if it is the first time that the meteor touches the floor
+                // we should have the effect
+                if (!m.impacted && m.j.getMin().y <= 0.01f) {
+                    rings.push_back({ glm::vec3(m.j.center.x, 0.0f, m.j.center.z), 0.0f, u01(rng) });
+                    slowmoTimer = 0.40f;   timeScale = 0.35f;
+                    shakeTimer  = 0.25f;
+                    m.impacted  = true;
+                    //sparks
+                        int n = 40;
+                    for (int i = 0; i < n; ++i) {
+                        float th = uTheta(rng);
+                        float sp = 1.0f + 0.8f * u01(rng);
+                        glm::vec3 dir = glm::vec3(std::cos(th), 0.4f + 0.6f * u01(rng), std::sin(th));
+                        Ember e;
+                        e.p = glm::vec3(m.j.center.x, 0.03f, m.j.center.z);
+                        e.v = dir * sp;
+                        e.t = 0.0f;
+                        e.life = 0.9f + 0.6f * u01(rng);
+                        e.r = 0.02f + 0.02f * u01(rng);
+                        embers.push_back(e);
+                    }
+                   // more emberry effect
+                    scorches.push_back({
+                        { m.j.center.x, 0.0f, m.j.center.z }, 0.0f, 6.0f, 0.9f + 0.4f * u01(rng), u01(rng) * glm::two_pi<float>()});
+                    // smoke plumes around the impact
+                    int ns = 12;
+                    for (int i = 0; i < ns; ++i) {
+                        float th  = uTheta(rng);
+                        float rad = 0.25f + 0.25f * u01(rng);
+                        smokes.push_back({
+                            { m.j.center.x + std::cos(th)*rad, 0.02f, m.j.center.z + std::sin(th)*rad },
+                            { 0.15f*std::cos(th), 0.6f + 0.4f*u01(rng), 0.15f*std::sin(th) },
+                            0.0f,
+                            1.6f + 0.9f*u01(rng),
+                            0.12f + 0.08f*u01(rng)
+                        });
+                    }
+                }
+                float moved = glm::length(m.j.center - m.lastCenter);
+                //optimize the damn lag
+                m.lastCenter = m.j.center;
+                m.stillTime = (moved < 0.002f) ? (m.stillTime + dt) : 0.0f;
+                m.j.CollideWith(j1);
+                m.j.CollideWith(j2);
+            }
+            // meteor end
             if (dragging && draggedJelly) {
                 glm::vec3 smoothed = glm::mix(draggedJelly->center, dragTargetCenter, 0.35f);
                 draggedJelly->TeleportToCenter(smoothed);
             }            
+            // shockwave
+            for (auto& r : rings) r.t += dt;
+            rings.erase(std::remove_if(rings.begin(), rings.end(),
+                        [](const Ring& r){ return r.t > 1.2f; }), rings.end());
+            for (auto& e : embers) {
+                e.t += dt;
+                e.p += e.v * dt;
+                e.v *= 0.98f;            
+                e.v.y -= 0.8f * dt;      
+            }
+            embers.erase(std::remove_if(embers.begin(), embers.end(),
+                        [](const Ember& e){ return e.t > e.life; }), embers.end());
+            // emberry effect
+            for (auto& s : scorches) s.t += dt;
+            scorches.erase(std::remove_if(scorches.begin(), scorches.end(),[](const Scorch& s){ return s.t > s.life; }), scorches.end());
+            for (auto& s : smokes) {
+                s.t += dt;
+                s.p += s.v * dt;
+                s.v *= 0.985f;      
+                s.v.y += 0.15f*dt; 
+                s.r += 0.12f*dt;    
+            }
+            smokes.erase(std::remove_if(smokes.begin(), smokes.end(),
+                [](const Smoke& s){ return s.t > s.life; }), smokes.end());
+
+            if (slowmoTimer > 0.0f) {
+                slowmoTimer -= dt;
+                if (slowmoTimer <= 0.0f) timeScale = 1.0f;
+            }
+            if (shakeTimer > 0.0f) shakeTimer -= dt;
             accumulator -= fixedDt;
+            meteors.erase(std::remove_if(meteors.begin(), meteors.end(),
+            [](const Meteor& m){
+                return m.stillTime > 2.0f && m.j.center.y < 0.38f; // settled on floor
+            }), meteors.end());
         }
 
 
@@ -520,7 +669,6 @@ int main() {
         glUniform3f(glGetUniformLocation(shader.ID, "camPos"), camera.Position.x, camera.Position.y, camera.Position.z);
         camera.Matrix(shader, "camMatrix");
         glUniform1f(glGetUniformLocation(shader.ID, "fogAmount"), 0.85f);
-
 
         // Draw floor & walls with BRICK texture
         brickTex.Bind();                 // unit 0; shader uses sampler "tex0"
@@ -547,27 +695,132 @@ int main() {
         }
         catFur.Unbind();
         glEnable(GL_BLEND);
+        //draw the meteor jelly cats
+        GLint tintLocJ = glGetUniformLocation(shader.ID, "jellyTint");
 
-        //solar
-// --- solar ---
-shader.Activate();
-camera.Matrix(shader, "camMatrix");
+        // rendering two-sided and using alphq
+        glDisable(GL_CULL_FACE);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-// bind WHITE texture so tint is pure color (no bricks)
-glActiveTexture(GL_TEXTURE0);
-glBindTexture(GL_TEXTURE_2D, whiteTex);
+        for (auto& m : meteors) {
+            glUniform4f(tintLocJ, m.tint.r, m.tint.g, m.tint.b, 1.0f);
+            catFace.Bind();  m.j.RenderFace(0);  catFace.Unbind();
+            catFur.Bind();   for (int f = 1; f < 6; ++f) m.j.RenderFace(f);  catFur.Unbind();
+        }
+        glUniform4f(tintLocJ, 1,1,1,1);
 
-// make them a bit emissive-looking: kill spec for this pass
-GLint specLoc = glGetUniformLocation(shader.ID, "jellySpecular");
-GLint wrapLoc = glGetUniformLocation(shader.ID, "jellyWrap");
-GLint modelLoc = glGetUniformLocation(shader.ID, "model");
-GLint tintLoc  = glGetUniformLocation(shader.ID, "jellyTint");
+        // solar
+        shader.Activate();
+        camera.Matrix(shader, "camMatrix");
 
-// save old values by just restoring after (we know defaults used below)
-glUniform1f(specLoc, 0.0f);
-glUniform1f(wrapLoc, 0.0f);
+        // bind WHITE texture so tint is pure color (no bricks)
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, whiteTex);
 
-// Sun (solid)
+        // make them a bit emissive-looking: kill spec for this pass
+        GLint specLoc = glGetUniformLocation(shader.ID, "jellySpecular");
+        GLint wrapLoc = glGetUniformLocation(shader.ID, "jellyWrap");
+        GLint modelLoc = glGetUniformLocation(shader.ID, "model");
+        GLint tintLoc  = glGetUniformLocation(shader.ID, "jellyTint");
+        //test shockwave emiisive
+        glUniform1f(specLoc, 0.0f);
+        glUniform1f(wrapLoc, 0.0f);
+
+        // -shockwave
+        glUniform1f(glGetUniformLocation(shader.ID, "fogAmount"), 0.25f);
+
+        glDepthMask(GL_FALSE);                    
+        glDisable(GL_CULL_FACE);
+        glBlendFunc(GL_ONE, GL_ONE);       
+
+        for (const auto& r : rings) {
+            float flick = 0.6f + 0.4f * std::sin(22.0f * r.t + 6.28318f * r.seed);
+            float sBase = 0.35f + r.t * 2.7f;
+
+            glm::vec3 deep = glm::vec3(0.70f, 0.05f, 0.02f); // bloody red
+            glm::vec3 mid  = glm::vec3(1.00f, 0.35f, 0.05f); // orange
+            glm::vec3 hot  = glm::vec3(1.00f, 0.95f, 0.85f); // white
+            glm::vec3 glow = glm::vec3(1.00f, 0.80f, 0.20f); // yellow
+
+            // smoky color oooooh
+            glm::mat4 Mo = TRS3(glm::vec3(r.p.x, 0.02f, r.p.z), glm::vec3(sBase * 1.35f, 0.01f, sBase * 1.35f));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Mo));
+            glUniform4f(tintLoc, glow.r, glow.g, glow.b, glm::max(0.0f, 0.35f - r.t * 0.25f) * flick);
+            sphere.draw();
+
+            // mid ring
+            glm::mat4 Mm = TRS3(glm::vec3(r.p.x, 0.02f, r.p.z), glm::vec3(sBase, 0.01f, sBase));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Mm));
+            glUniform4f(tintLoc, mid.r, mid.g, mid.b, glm::max(0.0f, 0.55f - r.t * 0.45f) * flick);
+            sphere.draw();
+
+            // inner core color
+            glm::mat4 Mi = TRS3(glm::vec3(r.p.x, 0.02f, r.p.z), glm::vec3(sBase * 0.65f, 0.01f, sBase * 0.65f));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Mi));
+            glUniform4f(tintLoc, hot.r, hot.g, hot.b, glm::max(0.0f, 0.30f - r.t * 0.35f) * (0.7f + 0.3f * flick));
+            sphere.draw();
+
+            // little bloody red
+            glm::mat4 Md = TRS3(glm::vec3(r.p.x, 0.02f, r.p.z), glm::vec3(sBase * 1.05f, 0.01f, sBase * 1.05f));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Md));
+            glUniform4f(tintLoc, deep.r, deep.g, deep.b, glm::max(0.0f, 0.25f - r.t * 0.20f) * 0.6f * flick);
+            sphere.draw();
+        }
+
+
+        for (const auto& e : embers) {
+            float life01 = 1.0f - (e.t / e.life);
+            glm::vec3 col = glm::mix(glm::vec3(1.0f, 0.20f, 0.05f),  
+                                    glm::vec3(1.0f, 0.80f, 0.20f), 
+                                    1.0f - life01);
+            //faded Alan walker
+            float a = 0.6f * life01;
+            glm::mat4 Me = TRS(e.p, e.r * (0.6f + 0.8f * (1.0f - life01)));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Me));
+            glUniform4f(tintLoc, col.r, col.g, col.b, a);
+            sphere.draw();
+        }
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDepthMask(GL_FALSE);
+        glUniform1f(specLoc, 0.0f);
+        glUniform1f(wrapLoc, 0.0f);
+        //emberry effect
+        for (const auto& s : smokes) {
+            float life01 = 1.0f - (s.t / s.life);
+            float a = 0.35f * life01 * life01;                 
+            glm::vec3 col(0.02f, 0.01f, 0.01f);                
+            float ySquash = 0.6f + 0.4f * (1.0f - life01);     
+            glm::mat4 Ms = glm::scale(glm::translate(glm::mat4(1.0f), s.p),
+                                    glm::vec3(s.r, s.r * ySquash, s.r));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Ms));
+            glUniform4f(tintLoc, col.r, col.g, col.b, a);
+            sphere.draw();
+        }
+        for (const auto& sc : scorches) {
+            float life01 = 1.0f - (sc.t / sc.life);
+            float a = 0.42f * life01 * life01;                 
+            float r = sc.r * (1.0f + 0.15f * (1.0f - life01)); 
+            float jag = 1.0f + 0.06f * std::sin(7.0f * sc.rot + 2.3f * sc.t);
+            glm::mat4 Ms = TRS3(glm::vec3(sc.p.x, 0.001f, sc.p.z),
+                                glm::vec3(r * jag, 0.01f, r));
+            glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(Ms));
+            glUniform4f(tintLoc, 0.02f, 0.00f, 0.00f, a);      
+            sphere.draw();
+        }
+
+        glDepthMask(GL_TRUE);  // leave blend mode as-is; your code restores right after
+
+
+        // restore
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDepthMask(GL_TRUE);
+        glUniform1f(glGetUniformLocation(shader.ID, "fogAmount"), 0.35f);
+
+
+
+
+    // Sun
     {
         glm::mat4 M = TRS(solarCenter, sun.radius);
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(M));
