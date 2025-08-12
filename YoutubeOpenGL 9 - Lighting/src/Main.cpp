@@ -37,6 +37,11 @@ float grabDist = 0.0f;
 glm::vec3 grabOffset(0.0f);
 glm::vec3 dragTargetCenter(0.0f);
 Jelly* draggedJelly = nullptr;  // pointer to currently dragged jelly
+glm::vec3 dragTargetWorld(0.0f);
+int       draggedParticle = -1;
+float     dragStiffness = 0.85f;     // how hard the pin pulls each frame (0..1)
+bool      dragZeroVelocity = true;   // true = "hard pin" feel; set false for softer
+
 
 static inline glm::mat4 makePlanarShadow(const glm::vec4& plane, const glm::vec4& light)
 {
@@ -656,8 +661,15 @@ int main() {
                 dragging = true;
                 grabDist = closestHit;
                 glm::vec3 hit = r.o + r.d * closestHit;
-                grabOffset = hit - draggedJelly->center;
-                dragTargetCenter = draggedJelly->center;
+                /*grabOffset = hit - draggedJelly->center;
+                dragTargetCenter = draggedJelly->center;*/
+
+                // choose closest particle to the hit point
+                draggedParticle = draggedJelly->ClosestParticleTo(hit);
+
+                // set initial target and install the pin in the physics object
+                dragTargetWorld = hit;
+                draggedJelly->SetPin(draggedParticle, dragTargetWorld, dragStiffness, dragZeroVelocity);
             }
         }
 
@@ -678,10 +690,23 @@ int main() {
             double sy = double(fbHeight) / double(winH);
 
             Ray r = mouseRay(mx * sx, my * sy, fbWidth, fbHeight, camera);
-            glm::vec3 desired = r.o + r.d * grabDist;
-            dragTargetCenter = desired - grabOffset;
-        }
+            /*glm::vec3 desired = r.o + r.d * grabDist;
+            dragTargetCenter = desired - grabOffset;*/
+            // Keep constant depth along the ray
+            dragTargetWorld = r.o + r.d * grabDist;
 
+            // Feed new target into the pin each frame
+            draggedJelly->UpdatePinTarget(dragTargetWorld);
+        }
+        if (!down && wasDown) {
+            if (draggedJelly) {
+                draggedJelly->ClearPin();
+            }
+            dragging = false;
+            draggedJelly = nullptr;
+            draggedParticle = -1;
+        }
+        wasDown = down;
 
 
         // Step physics
@@ -743,10 +768,10 @@ int main() {
                 m.j.CollideWith(j2);
             }
             // meteor end
-            if (dragging && draggedJelly) {
+            /*if (dragging && draggedJelly) {
                 glm::vec3 smoothed = glm::mix(draggedJelly->center, dragTargetCenter, 0.35f);
                 draggedJelly->TeleportToCenter(smoothed);
-            }            
+            }  */          
             // shockwave
             for (auto& r : rings) r.t += dt;
             rings.erase(std::remove_if(rings.begin(), rings.end(),

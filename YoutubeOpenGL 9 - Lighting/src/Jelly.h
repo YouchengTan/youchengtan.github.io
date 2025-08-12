@@ -42,6 +42,11 @@ public:
     // stress heatmap
     bool showStress = true;
 
+    int  ClosestParticleTo(const glm::vec3& p) const;
+    void SetPin(int particleIndex, const glm::vec3& targetWorld, float stiffness = 1.0f, bool zeroVelocity = true);
+    void UpdatePinTarget(const glm::vec3& targetWorld); // while dragging
+    void ClearPin();
+
 private:
     struct Particle {
         glm::vec3 p;       // current
@@ -66,6 +71,13 @@ private:
     void collideWithContainer(const Container& box);
     void updateAABB();
     void dampVel(float factor);
+
+    // Single active "mouse pin" (minimal design)
+    bool        hasPin = false;
+    int         pinIdx = -1;
+    glm::vec3   pinTarget = glm::vec3(0.0f);
+    float       pinAlpha = 1.0f;   // 0..1: how hard we pull toward the target this frame
+    bool        pinZeroVel = true; // optionally zero velocity when applying pin
 
 public:
     glm::vec3 center;

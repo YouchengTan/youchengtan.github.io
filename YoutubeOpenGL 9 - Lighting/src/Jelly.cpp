@@ -414,11 +414,63 @@ void Jelly::updateAABB()
     aabbMin = mn; aabbMax = mx;
 }
 
+int Jelly::ClosestParticleTo(const glm::vec3& p) const
+{
+    int best = -1;
+    float bestD2 = 1e30f;
+    for (int i = 0; i < (int)particles.size(); ++i)
+    {
+        float d2 = glm::length2(particles[i].p - p);
+        if (d2 < bestD2) { bestD2 = d2; best = i; }
+    }
+    return best;
+}
+
+void Jelly::SetPin(int particleIndex, const glm::vec3& targetWorld, float stiffness, bool zeroVelocity)
+{
+    hasPin = (particleIndex >= 0 && particleIndex < (int)particles.size());
+    pinIdx = hasPin ? particleIndex : -1;
+    pinTarget = targetWorld;
+    pinAlpha = glm::clamp(stiffness, 0.0f, 1.0f);
+    pinZeroVel = zeroVelocity;
+}
+
+void Jelly::UpdatePinTarget(const glm::vec3& targetWorld)
+{
+    if (!hasPin) return;
+    pinTarget = targetWorld;
+}
+
+void Jelly::ClearPin()
+{
+    hasPin = false;
+    pinIdx = -1;
+}
+
 void Jelly::Update(float dt, const Container& box)
 {
     for (auto& p : particles) p.a += acceleration;
     applyGravity();
     integrate(dt);
+
+    // --- APPLY PIN CONSTRAINT (mouse drag) ---
+    if (hasPin && pinIdx >= 0 && pinIdx < (int)particles.size())
+    {
+        auto& pt = particles[pinIdx];
+
+        // Move toward target with strength pinAlpha
+        glm::vec3 newP = glm::mix(pt.p, pinTarget, pinAlpha);
+
+        if (pinZeroVel) {
+            pt.prev = newP; // zero velocity
+        }
+        else {
+            // keep some velocity continuity but steer toward target
+            glm::vec3 v = (newP - pt.prev); // implicit velocity
+            pt.prev = newP - v * 0.2f;      // damp a bit to keep stable
+        }
+        pt.p = newP;
+    }
 
     for (float& st : stress) st *= 0.92f;
 

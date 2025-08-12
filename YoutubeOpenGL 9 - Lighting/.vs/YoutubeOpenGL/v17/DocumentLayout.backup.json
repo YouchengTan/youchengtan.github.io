@@ -1,21 +1,18 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "D:\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\",
+  "WorkspaceRootPath": "F:\\UCB\\CS184\\finalproject\\YoutubeOpenGL 9 - Lighting\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{D94349FD-5460-401F-9D7A-1CEDAAC766A5}|YoutubeOpenGL.vcxproj|D:\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{D94349FD-5460-401F-9D7A-1CEDAAC766A5}|YoutubeOpenGL.vcxproj|solutionrelative:src\\Jelly.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{D94349FD-5460-401F-9D7A-1CEDAAC766A5}|YoutubeOpenGL.vcxproj|D:\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\src\\Main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "AbsoluteMoniker": "D:0:0:{D94349FD-5460-401F-9D7A-1CEDAAC766A5}|YoutubeOpenGL.vcxproj|F:\\UCB\\CS184\\finalproject\\YoutubeOpenGL 9 - Lighting\\src\\Main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{D94349FD-5460-401F-9D7A-1CEDAAC766A5}|YoutubeOpenGL.vcxproj|solutionrelative:src\\Main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\CS184\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\src\\Main.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{D94349FD-5460-401F-9D7A-1CEDAAC766A5}|YoutubeOpenGL.vcxproj|F:\\UCB\\CS184\\finalproject\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{D94349FD-5460-401F-9D7A-1CEDAAC766A5}|YoutubeOpenGL.vcxproj|solutionrelative:src\\Jelly.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{D94349FD-5460-401F-9D7A-1CEDAAC766A5}|YoutubeOpenGL.vcxproj|D:\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
-      "RelativeMoniker": "D:0:0:{D94349FD-5460-401F-9D7A-1CEDAAC766A5}|YoutubeOpenGL.vcxproj|solutionrelative:src\\Jelly.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+      "AbsoluteMoniker": "D:0:0:{D94349FD-5460-401F-9D7A-1CEDAAC766A5}|YoutubeOpenGL.vcxproj|F:\\UCB\\CS184\\finalproject\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{D94349FD-5460-401F-9D7A-1CEDAAC766A5}|YoutubeOpenGL.vcxproj|solutionrelative:src\\Jelly.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     }
   ],
   "DocumentGroupContainers": [
@@ -25,81 +22,57 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 4,
           "Children": [
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "Jelly.h",
-              "DocumentMoniker": "D:\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.h",
-              "RelativeDocumentMoniker": "src\\Jelly.h",
-              "ToolTip": "D:\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.h",
-              "RelativeToolTip": "src\\Jelly.h",
-              "ViewState": "AgIAAGEAAAAAAAAAAAAAAEMAAAAfAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-08-11T13:27:50.862Z",
-              "EditorCaption": ""
-            },
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
             },
             {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "Main.cpp",
-              "DocumentMoniker": "D:\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\src\\Main.cpp",
-              "RelativeDocumentMoniker": "src\\Main.cpp",
-              "ToolTip": "D:\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\src\\Main.cpp",
-              "RelativeToolTip": "src\\Main.cpp",
-              "ViewState": "AgIAAFkEAAAAAAAAAAAqwGYEAAAaAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2025-08-12T02:21:09.277Z"
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c64b9c2-e352-428e-a56d-0ace190b99a6}"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "Jelly.cpp",
-              "DocumentMoniker": "D:\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.cpp",
-              "RelativeDocumentMoniker": "src\\Jelly.cpp",
-              "ToolTip": "D:\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.cpp",
-              "RelativeToolTip": "src\\Jelly.cpp",
-              "ViewState": "AgIAAAoBAAAAAAAAAAAAABMBAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2025-08-11T13:21:13.61Z"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "Orientation": 0,
-      "VerticalTabListWidth": 256,
-      "FloatingWindowState": {
-        "Id": "69e7490a-fe36-44fc-8b63-54bee648b3a1",
-        "Display": 0,
-        "X": 874,
-        "Y": 273,
-        "Width": 837,
-        "Height": 643,
-        "WindowState": 0
-      },
-      "DocumentGroups": [
-        {
-          "DockedWidth": 200,
-          "SelectedChildIndex": 0,
-          "Children": [
+              "DocumentIndex": 2,
+              "Title": "Jelly.h",
+              "DocumentMoniker": "F:\\UCB\\CS184\\finalproject\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.h",
+              "RelativeDocumentMoniker": "src\\Jelly.h",
+              "ToolTip": "F:\\UCB\\CS184\\finalproject\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.h",
+              "RelativeToolTip": "src\\Jelly.h",
+              "ViewState": "AgIAACcAAAAAAAAAAAAAAE8AAABQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-08-11T13:27:50.862Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 0,
               "Title": "Main.cpp",
-              "DocumentMoniker": "D:\\CS184\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\src\\Main.cpp",
-              "RelativeDocumentMoniker": "..\\..\\CS184\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\src\\Main.cpp",
-              "ToolTip": "D:\\CS184\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\src\\Main.cpp",
-              "RelativeToolTip": "..\\..\\CS184\\youchengtan.github.io\\YoutubeOpenGL 9 - Lighting\\src\\Main.cpp",
-              "ViewState": "AgIAAKsDAAAAAAAAAAAAAK8DAAAAAAAAAAAAAA==",
+              "DocumentMoniker": "F:\\UCB\\CS184\\finalproject\\YoutubeOpenGL 9 - Lighting\\src\\Main.cpp",
+              "RelativeDocumentMoniker": "src\\Main.cpp",
+              "ToolTip": "F:\\UCB\\CS184\\finalproject\\YoutubeOpenGL 9 - Lighting\\src\\Main.cpp",
+              "RelativeToolTip": "src\\Main.cpp",
+              "ViewState": "AgIAAOgCAAAAAAAAAAAAwP0CAAAeAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2025-08-12T02:21:35.347Z",
+              "WhenOpened": "2025-08-12T02:21:09.277Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Jelly.cpp",
+              "DocumentMoniker": "F:\\UCB\\CS184\\finalproject\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.cpp",
+              "RelativeDocumentMoniker": "src\\Jelly.cpp",
+              "ToolTip": "F:\\UCB\\CS184\\finalproject\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.cpp",
+              "RelativeToolTip": "src\\Jelly.cpp",
+              "ViewState": "AgIAANoBAAAAAAAAAAAQwNgBAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-08-11T13:21:13.61Z",
               "EditorCaption": ""
             }
           ]
