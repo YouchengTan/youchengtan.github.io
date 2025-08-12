@@ -188,6 +188,23 @@ struct Scorch { glm::vec3 p; float t, life, r; float rot; };
 std::vector<Scorch> scorches;
 struct Smoke { glm::vec3 p, v; float t, life, r; };
 std::vector<Smoke> smokes;
+struct Heart { glm::vec3 c, v; float size, t, life, seed; };
+std::vector<Heart> hearts;
+
+struct HeartQuad {
+    VAO vao; VBO* vbo = nullptr; EBO* ebo = nullptr;
+    void build(){
+        float verts[] = { -1.f,-1.f,  1.f,-1.f,  1.f, 1.f,  -1.f, 1.f };
+        unsigned int idx[] = { 0,1,2, 0,2,3 };
+        vao.Bind();
+        vbo = new VBO(verts, sizeof(verts));
+        ebo = new EBO(idx, sizeof(idx));
+        vao.LinkAttrib(*vbo, 0, 2, GL_FLOAT, 2*sizeof(float), (void*)0);
+        vao.Unbind(); vbo->Unbind(); ebo->Unbind();
+    }
+    void draw(){ vao.Bind(); glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0); vao.Unbind(); }
+};
+
 
 float timeScale   = 1.0f;
 float slowmoTimer = 0.0f;
@@ -238,6 +255,8 @@ int main() {
     // Shaders
     Shader shader("default.vert", "default.frag");   // used for everything textured/lit
     Shader lightShader("light.vert", "light.frag");  // small light cube
+    Shader heartShader("heart.vert", "heart.frag");
+
 
     // Camera
     Camera camera(width, height, glm::vec3(0.0f, 0.5f, 0.9f));
@@ -298,6 +317,9 @@ int main() {
     //solar cat
     SphereGeo sphere;
     sphere.build(24, 36);
+    HeartQuad heartQuad;
+    heartQuad.build();
+
     glm::vec3 solarCenter(0.0f, 1.45f, 0.0f);
     Body sun { 0.12f, 0.00f, 0.00f, glm::vec3(1.05f, 0.75f, 0.45f), 0.0f };
     std::vector<Body> planets = {
@@ -386,6 +408,26 @@ int main() {
     // Two jelly cubes � lighter mesh + gentle springs (PoC-friendly)
     Jelly j1(glm::vec3(0.00f, 0.70f, 0.00f), 0.35f, glm::vec3(0), glm::vec3(0), 0.10f, 0.020f, 4);
     Jelly j2(glm::vec3(0.22f, 0.95f, 0.00f), 0.35f, glm::vec3(0), glm::vec3(0), 0.10f, 0.00f, 4);
+    auto spawnHearts = [&](int n){
+    glm::vec3 mid = 0.5f*(j1.center + j2.center);
+    for(int i=0;i<n;++i){
+        float a = uTheta(rng);
+        float r = 0.10f * std::sqrt(u01(rng));
+        Heart h;
+        h.c = glm::vec3(mid.x + r*std::cos(a), 0.05f, mid.z + r*std::sin(a));
+        h.v = glm::vec3(0.10f*std::cos(a), 0.70f + 0.30f*u01(rng), 0.10f*std::sin(a));
+        h.size = 0.06f + 0.04f*u01(rng);
+
+        h.t = 0.0f;
+        h.life = 2.4f + 1.8f*u01(rng);
+        h.seed = u01(rng)*6.28318f;
+        hearts.push_back(h);
+    }
+    };
+    float heartCooldown = 0.0f;
+    bool heartsWereClose = false;
+    float heartsFarTimer = 0.0f;
+
 
 
     // Build brick floor and 4 brick walls as world-space quads
@@ -662,6 +704,46 @@ int main() {
             }
             smokes.erase(std::remove_if(smokes.begin(), smokes.end(),
                 [](const Smoke& s){ return s.t > s.life; }), smokes.end());
+            heartsFarTimer += dt;
+            // XZ so that ignores bugs
+            glm::vec2 d2(j1.center.x - j2.center.x, j1.center.z - j2.center.z);
+            float d12xz = glm::length(d2);
+            const float CLOSE_T = 0.60f; 
+            const float FAR_T   = 0.80f;
+            bool closeNow = (d12xz < CLOSE_T);
+            if (closeNow && !heartsWereClose) {
+                spawnHearts(12);
+                heartCooldown = 0.0f;  
+            }
+
+            if (closeNow) {
+                heartsFarTimer = 0.0f;
+                heartCooldown -= dt;
+                if (heartCooldown <= 0.0f) {
+                    spawnHearts(6);              
+                    heartCooldown = 0.25f;     
+                }
+            } else if (d12xz > FAR_T && heartsFarTimer > 0.35f) {
+                heartCooldown = 0.0f;                
+            }
+
+            heartsWereClose = closeNow;
+
+            for (auto& h : hearts) {
+                h.t += dt;
+                h.c += h.v * dt;
+                h.v *= 0.995f;
+                h.v.x += 0.40f * std::sin(2.0f*h.t + h.seed) * dt;
+                h.v.z += 0.35f * std::cos(1.7f*h.t + h.seed) * dt;
+                h.size += 0.02f * dt;
+            }
+
+            hearts.erase(std::remove_if(hearts.begin(), hearts.end(),
+                [](const Heart& h){ return h.t > h.life || h.c.y > 2.4f; }), hearts.end());
+            if (hearts.size() > 1500)
+                hearts.erase(hearts.begin(), hearts.begin() + (hearts.size() - 1500));
+
+
 
             if (slowmoTimer > 0.0f) {
                 slowmoTimer -= dt;
@@ -722,7 +804,7 @@ int main() {
             catFur.Bind();   for (int f = 1; f < 6; ++f) m.j.RenderFace(f);  catFur.Unbind();
         }
         glUniform4f(tintLocJ, 1,1,1,1);
-
+    
         // solar
         shader.Activate();
         camera.Matrix(shader, "camMatrix");
@@ -929,6 +1011,61 @@ int main() {
         sphere.draw();
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
+
+    // hearts
+    heartShader.Activate();
+    camera.Matrix(heartShader, "camMatrix");
+    glm::mat4 P = glm::perspective(glm::radians(45.0f), float(width)/float(height), 0.1f, 100.0f);
+    glm::mat4 V = glm::inverse(P) * camera.cameraMatrix;  
+    glm::mat4 invV = glm::inverse(V);               
+    glm::vec3 camR(invV[0].x, invV[0].y, invV[0].z);
+    glm::vec3 camU(invV[1].x, invV[1].y, invV[1].z);
+    camR = glm::normalize(camR);
+    camU = glm::normalize(camU);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
+
+    // sort back-to-front for alpha
+    static std::vector<std::pair<float,int>> heartSort;
+    heartSort.resize((int)hearts.size());
+    for (int i=0;i<(int)hearts.size();++i){
+        float d2 = glm::length2(camera.Position - hearts[i].c);
+        heartSort[i] = { d2, i };
+    }
+    std::sort(heartSort.begin(), heartSort.end(),
+            [](const auto& A, const auto& B){ return A.first > B.first; });
+
+    GLint hc   = glGetUniformLocation(heartShader.ID, "uCenter");
+    GLint hr   = glGetUniformLocation(heartShader.ID, "uRight");
+    GLint hu   = glGetUniformLocation(heartShader.ID, "uUp");
+    GLint hs   = glGetUniformLocation(heartShader.ID, "uSize");
+    GLint hage = glGetUniformLocation(heartShader.ID, "uAge");
+    GLint hlif = glGetUniformLocation(heartShader.ID, "uLife");
+    GLint hseed= glGetUniformLocation(heartShader.ID, "uSeed");
+    GLint htim = glGetUniformLocation(heartShader.ID, "uTime");
+    GLint htint= glGetUniformLocation(heartShader.ID, "uTint");
+
+    glUniform3f(hr, camR.x, camR.y, camR.z);
+    glUniform3f(hu, camU.x, camU.y, camU.z);
+    glUniform1f(htim, (float)glfwGetTime());
+
+    for (const auto& pr : heartSort) {
+        const auto& h = hearts[pr.second];
+        glUniform3f(hc, h.c.x, h.c.y, h.c.z);
+        glUniform1f(hs, h.size);
+        glUniform1f(hage, h.t);
+        glUniform1f(hlif, h.life);
+        glUniform1f(hseed, h.seed);
+
+        // vary pink slightly per heart
+        float tw = 0.85f + 0.15f * std::sin(7.0f*h.seed + 2.0f*h.t);
+        glUniform3f(htint, 1.0f, 0.35f*tw, 0.60f*tw);
+
+        heartQuad.draw();
+    }
+    glDepthMask(GL_TRUE);
 
     // restore shader params for the rest of the scene
     glUniform1f(specLoc, 0.7f);

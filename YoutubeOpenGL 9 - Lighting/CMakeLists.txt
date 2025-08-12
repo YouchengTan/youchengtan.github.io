@@ -19,6 +19,19 @@ set(SRC
 
 add_executable(YoutubeOpenGL9Lighting ${SRC})
 
+# --- ship shaders beside the executable ---
+set(SHADERS
+    default.vert default.frag
+    light.vert   light.frag
+    heart.vert   heart.frag
+)
+foreach(S ${SHADERS})
+  add_custom_command(TARGET YoutubeOpenGL9Lighting POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/${S}
+            $<TARGET_FILE_DIR:YoutubeOpenGL9Lighting>/${S})
+endforeach()
+
 target_include_directories(YoutubeOpenGL9Lighting PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/Libraries/include
@@ -33,13 +46,4 @@ target_link_libraries(YoutubeOpenGL9Lighting PRIVATE
     "-framework Cocoa"
     "-framework IOKit"
     "-framework CoreVideo"
-)
-
-add_custom_command(TARGET YoutubeOpenGL9Lighting POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_CURRENT_SOURCE_DIR}/default.vert
-        ${CMAKE_CURRENT_SOURCE_DIR}/default.frag
-        ${CMAKE_CURRENT_SOURCE_DIR}/light.vert
-        ${CMAKE_CURRENT_SOURCE_DIR}/light.frag
-        $<TARGET_FILE_DIR:YoutubeOpenGL9Lighting>
 )
