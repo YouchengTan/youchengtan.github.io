@@ -81,7 +81,7 @@
 		<p>Collosion with the ground is done by clamping between particle positions and z-coordinate of the ground, collision between jellies is done by the axis-aligned bounding-box algorithm, where each time a jelly's position is being updated, its bounding box is updated with its new min and max particle position, the collision is detected by checking against the other jelly's bounding box for overlapping interval. After a collision is detected the program then decides which shortest direction to push the jelly in to reslove collision. This is O(1) time and gets the job done.</p>
 
 		<h2>Mouse Ray Jelly Dragging</h2>
-		<p></p>
+		<p>When the mouse clicks on a jelly, a ray is cast from the camera through the cursor position into the scene. If the ray intersects the jelly’s axis-aligned bounding box, the intersection point is calculated. The closest particle on the jelly to this point is selected, and a pin constraint is applied to it during the Position-Based Dynamics step. The pin pulls the particle toward the ray’s target position each frame, with adjustable stiffness, while the rest of the jelly deforms naturally due to spring constraints. This allows interactive dragging of any point on the jelly surface, creating realistic stretching and squashing effects.</p>
 
 		<h2>...</h2>
 		<p></p>

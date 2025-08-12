@@ -22,7 +22,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 4,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Bookmark",
@@ -31,23 +31,6 @@
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{40ea2e6b-2121-4bb8-a43e-c83c04b51041}"
-            },
-            {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{1c64b9c2-e352-428e-a56d-0ace190b99a6}"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "Jelly.h",
-              "DocumentMoniker": "F:\\UCB\\CS184\\finalproject\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.h",
-              "RelativeDocumentMoniker": "src\\Jelly.h",
-              "ToolTip": "F:\\UCB\\CS184\\finalproject\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.h",
-              "RelativeToolTip": "src\\Jelly.h",
-              "ViewState": "AgIAACcAAAAAAAAAAAAAAE8AAABQAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
-              "WhenOpened": "2025-08-11T13:27:50.862Z",
-              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -63,6 +46,22 @@
               "EditorCaption": ""
             },
             {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c64b9c2-e352-428e-a56d-0ace190b99a6}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Jelly.h",
+              "DocumentMoniker": "F:\\UCB\\CS184\\finalproject\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.h",
+              "RelativeDocumentMoniker": "src\\Jelly.h",
+              "ToolTip": "F:\\UCB\\CS184\\finalproject\\YoutubeOpenGL 9 - Lighting\\src\\Jelly.h",
+              "RelativeToolTip": "src\\Jelly.h",
+              "ViewState": "AgIAACcAAAAAAAAAAAAAAE8AAABQAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-08-11T13:27:50.862Z"
+            },
+            {
               "$type": "Document",
               "DocumentIndex": 1,
               "Title": "Jelly.cpp",
@@ -72,8 +71,7 @@
               "RelativeToolTip": "src\\Jelly.cpp",
               "ViewState": "AgIAANoBAAAAAAAAAAAQwNgBAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
-              "WhenOpened": "2025-08-11T13:21:13.61Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-08-11T13:21:13.61Z"
             }
           ]
         }
