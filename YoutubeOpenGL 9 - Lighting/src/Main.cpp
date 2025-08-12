@@ -190,6 +190,7 @@ struct Smoke { glm::vec3 p, v; float t, life, r; };
 std::vector<Smoke> smokes;
 struct Heart { glm::vec3 c, v; float size, t, life, seed; };
 std::vector<Heart> hearts;
+std::vector<Heart> bgHearts;
 
 struct HeartQuad {
     VAO vao; VBO* vbo = nullptr; EBO* ebo = nullptr;
@@ -376,6 +377,24 @@ int main() {
         glm::vec3 col = hsv2rgb(randHueRomantic(), uSat(rng), uVal(rng));
         fireflies.push_back({ pos, uRadius(rng), uPhase(rng), col });
     }
+    auto spawnBgHearts = [&](int n){
+        for (int i = 0; i < n; ++i) {
+            float th = uTheta(rng);
+            float r  = 10.0f + 12.0f * u01(rng);   
+            float y  = 1.4f  + 0.9f  * u01(rng);  
+            Heart h;
+            h.c    = glm::vec3(std::cos(th)*r, y, std::sin(th)*r);
+            h.v    = glm::vec3(0.0f);            
+            h.size = 0.35f + 0.45f * u01(rng);    
+            h.t    = 0.0f;
+            h.life = 1e9f;                  
+            h.seed = u01(rng) * 6.28318f;
+            bgHearts.push_back(h);
+        }
+    };
+    spawnBgHearts(120);
+
+
 
     // meteor drag
     double nextMeteorAt = glfwGetTime() + 2.0;
@@ -555,6 +574,51 @@ int main() {
             spawnMeteor(box.max.y + 0.8f);
             nextMeteorAt = glfwGetTime() + 3.5; // every 2.25 secnds
         }
+        {
+            heartShader.Activate();
+            camera.Matrix(heartShader, "camMatrix");
+            glm::mat4 Pbg   = glm::perspective(glm::radians(45.0f), float(width)/float(height), 0.1f, 100.0f);
+            glm::mat4 Vbg   = glm::inverse(Pbg) * camera.cameraMatrix;
+            glm::mat4 invVb = glm::inverse(Vbg);
+            glm::vec3 camR(invVb[0].x, invVb[0].y, invVb[0].z);
+            glm::vec3 camU(invVb[1].x, invVb[1].y, invVb[1].z);
+            camR = glm::normalize(camR);
+            camU = glm::normalize(camU);
+
+            glDisable(GL_DEPTH_TEST);   
+            glDepthMask(GL_FALSE);    
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+            GLint hc   = glGetUniformLocation(heartShader.ID, "uCenter");
+            GLint hr   = glGetUniformLocation(heartShader.ID, "uRight");
+            GLint hu   = glGetUniformLocation(heartShader.ID, "uUp");
+            GLint hs   = glGetUniformLocation(heartShader.ID, "uSize");
+            GLint hage = glGetUniformLocation(heartShader.ID, "uAge");
+            GLint hlif = glGetUniformLocation(heartShader.ID, "uLife");
+            GLint hseed= glGetUniformLocation(heartShader.ID, "uSeed");
+            GLint htim = glGetUniformLocation(heartShader.ID, "uTime");
+            GLint htint= glGetUniformLocation(heartShader.ID, "uTint");
+
+            glUniform3f(hr, camR.x, camR.y, camR.z);
+            glUniform3f(hu, camU.x, camU.y, camU.z);
+            glUniform1f(htim, (float)glfwGetTime());
+
+            const glm::vec3 blackish(0.005f, 0.005f, 0.06f);
+
+            for (const auto& h : bgHearts) {
+                glUniform3f(hc, h.c.x, h.c.y, h.c.z);
+                glUniform1f(hs, h.size);
+                glUniform1f(hage, h.t);
+                glUniform1f(hlif, h.life);
+                glUniform1f(hseed, h.seed);
+                glUniform3f(htint, blackish.r, blackish.g, blackish.b);
+                heartQuad.draw();
+            }
+            glDepthMask(GL_TRUE);
+            glEnable(GL_DEPTH_TEST);
+        }
+
 
         // LMB press/release detection
         bool down = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
@@ -763,7 +827,11 @@ int main() {
                 hearts.erase(hearts.begin(), hearts.begin() + (hearts.size() - 1500));
 
 
-
+            for (auto& h : bgHearts) {
+                h.t += dt;
+                h.c.x += 0.05f * std::sin(0.6f * h.t + h.seed) * dt;
+                h.c.y += 0.01f * std::sin(0.9f * h.t + h.seed) * dt;
+            }
             if (slowmoTimer > 0.0f) {
                 slowmoTimer -= dt;
                 if (slowmoTimer <= 0.0f) timeScale = 1.0f;
