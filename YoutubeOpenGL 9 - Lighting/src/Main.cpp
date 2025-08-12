@@ -239,6 +239,7 @@ int main() {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_STENCIL_BITS, 8);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     GLFWwindow* window = glfwCreateWindow(width, height, "Jelly Cubes", NULL, NULL);
     if (!window) { std::cout << "Failed to create GLFW window\n"; glfwTerminate(); return -1; }
@@ -521,7 +522,8 @@ int main() {
     while (!glfwWindowShouldClose(window)) { // render loo entrance
         glfwGetFramebufferSize(window, &fbWidth, &fbHeight);
         glClearColor(0.12f, 0.05f, 0.10f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
 
         // Toggle stress heatmap with V key
         static bool vWasDown = false;
@@ -1076,39 +1078,70 @@ int main() {
         //end solar
 
     // jelly shadow
-
+    glm::mat4 I = glm::mat4(1.0f);
     glm::vec4 floorPlane(0, 1, 0, 0);
-    glm::vec4 light4(lightPos, 1.0f);
-    glm::mat4 S = makePlanarShadow(floorPlane, light4);
-    glm::mat4 S_bias = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0.002f, 0)) * S;
+    glm::mat4 S = makePlanarShadow(floorPlane, glm::vec4(lightPos, 1.0f));
 
     shader.Activate();
     camera.Matrix(shader, "camMatrix");
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, whiteTex);
-
-    const float kShadowAlpha = 0.18f;
-
     glUniform1f(specLoc, 0.0f);
     glUniform1f(wrapLoc, 0.0f);
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glDisable(GL_CULL_FACE);
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_FALSE);
+    const float kShadowAlpha = 0.18f;
 
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(S_bias));
-    glUniform4f(tintLoc, 0, 0, 0, kShadowAlpha);
+    glEnable(GL_STENCIL_TEST);
+    glStencilMask(0xFF);
+    glStencilFunc(GL_ALWAYS, 1, 0xFF);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    glDepthMask(GL_FALSE);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_EQUAL);
+
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(I));
+    floor.draw();
+
+    glDepthFunc(GL_LESS);
+
+    glStencilFunc(GL_EQUAL, 1, 0xFF);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+
+    glDisable(GL_DEPTH_TEST);
+
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(S));
     j1.Render();
     j2.Render();
 
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glStencilFunc(GL_EQUAL, 2, 0xFF);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
+
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+
+    glUniform4f(tintLoc, 0, 0, 0, kShadowAlpha);
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(S));
+    j1.Render();
+    j2.Render();
+
+    glDisable(GL_STENCIL_TEST);
     glDepthMask(GL_TRUE);
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+    glEnable(GL_DEPTH_TEST);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(I));
     glUniform4f(tintLoc, 1, 1, 1, 1);
     glUniform1f(specLoc, 0.7f);
     glUniform1f(wrapLoc, 0.4f);
+
+
 
 
         // Draw light cube
