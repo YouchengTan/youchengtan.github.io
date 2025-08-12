@@ -686,45 +686,6 @@ int main() {
         brickTex.Bind();                 // unit 0; shader uses sampler "tex0"
         glUniformMatrix4fv(glGetUniformLocation(shader.ID, "model"), 1, GL_FALSE, glm::value_ptr(I));
         floor.draw();
-        // jelly shadow
-
-        glm::vec4 floorPlane(0, 1, 0, 0);
-        glm::vec4 light4(lightPos, 1.0f);
-        glm::mat4 S = makePlanarShadow(floorPlane, light4);
-        glm::mat4 S_bias = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0.002f, 0)) * S;
-
-        shader.Activate();
-        camera.Matrix(shader, "camMatrix");
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, whiteTex);
-
-        GLint modelLoc = glGetUniformLocation(shader.ID, "model");
-        GLint tintLoc = glGetUniformLocation(shader.ID, "jellyTint");
-        GLint specLoc = glGetUniformLocation(shader.ID, "jellySpecular");
-        GLint wrapLoc = glGetUniformLocation(shader.ID, "jellyWrap");
-
-        const float kShadowAlpha = 0.18f;
-
-        glUniform1f(specLoc, 0.0f);
-        glUniform1f(wrapLoc, 0.0f);
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glDisable(GL_CULL_FACE);
-        glEnable(GL_DEPTH_TEST);
-        glDepthMask(GL_FALSE);
-
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(S_bias));
-        glUniform4f(tintLoc, 0, 0, 0, kShadowAlpha);
-        j1.Render();
-        j2.Render();
-
-        glDepthMask(GL_TRUE);
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
-        glUniform4f(tintLoc, 1, 1, 1, 1);
-        glUniform1f(specLoc, 0.7f);
-        glUniform1f(wrapLoc, 0.4f);
 
         // wallPosX.draw(); testing infinite floor effect
         // wallNegX.draw();
@@ -771,10 +732,10 @@ int main() {
         glBindTexture(GL_TEXTURE_2D, whiteTex);
 
         // make them a bit emissive-looking: kill spec for this pass
-        //GLint specLoc = glGetUniformLocation(shader.ID, "jellySpecular");
-        //GLint wrapLoc = glGetUniformLocation(shader.ID, "jellyWrap");
-        //GLint modelLoc = glGetUniformLocation(shader.ID, "model");
-        //GLint tintLoc  = glGetUniformLocation(shader.ID, "jellyTint");
+        GLint specLoc = glGetUniformLocation(shader.ID, "jellySpecular");
+        GLint wrapLoc = glGetUniformLocation(shader.ID, "jellyWrap");
+        GLint modelLoc = glGetUniformLocation(shader.ID, "model");
+        GLint tintLoc  = glGetUniformLocation(shader.ID, "jellyTint");
         //test shockwave emiisive
         glUniform1f(specLoc, 0.0f);
         glUniform1f(wrapLoc, 0.0f);
@@ -977,7 +938,40 @@ int main() {
 
         //end solar
 
+    // jelly shadow
 
+    glm::vec4 floorPlane(0, 1, 0, 0);
+    glm::vec4 light4(lightPos, 1.0f);
+    glm::mat4 S = makePlanarShadow(floorPlane, light4);
+    glm::mat4 S_bias = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0.002f, 0)) * S;
+
+    shader.Activate();
+    camera.Matrix(shader, "camMatrix");
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, whiteTex);
+
+    const float kShadowAlpha = 0.18f;
+
+    glUniform1f(specLoc, 0.0f);
+    glUniform1f(wrapLoc, 0.0f);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDisable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(S_bias));
+    glUniform4f(tintLoc, 0, 0, 0, kShadowAlpha);
+    j1.Render();
+    j2.Render();
+
+    glDepthMask(GL_TRUE);
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+    glUniform4f(tintLoc, 1, 1, 1, 1);
+    glUniform1f(specLoc, 0.7f);
+    glUniform1f(wrapLoc, 0.4f);
 
 
         // Draw light cube
