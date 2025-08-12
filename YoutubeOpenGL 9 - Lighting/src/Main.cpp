@@ -425,9 +425,10 @@ int main() {
         hearts.push_back(h);
     }
     };
-    float heartCooldown = 0.0f;
-    bool heartsWereClose = false;
-    float heartsFarTimer = 0.0f;
+    bool  heartsNearState = false;
+    float nearDwell       = 0.0f; 
+    float farDwell        = 0.0f; 
+    float heartTimer      = 0.0f;
 
 
 
@@ -706,30 +707,46 @@ int main() {
             }
             smokes.erase(std::remove_if(smokes.begin(), smokes.end(),
                 [](const Smoke& s){ return s.t > s.life; }), smokes.end());
-            heartsFarTimer += dt;
-            // XZ so that ignores bugs
-            glm::vec2 d2(j1.center.x - j2.center.x, j1.center.z - j2.center.z);
-            float d12xz = glm::length(d2);
-            const float CLOSE_T = 0.60f; 
-            const float FAR_T   = 0.80f;
-            bool closeNow = (d12xz < CLOSE_T);
-            if (closeNow && !heartsWereClose) {
-                spawnHearts(12);
-                heartCooldown = 0.0f;  
-            }
 
-            if (closeNow) {
-                heartsFarTimer = 0.0f;
-                heartCooldown -= dt;
-                if (heartCooldown <= 0.0f) {
-                    spawnHearts(6);              
-                    heartCooldown = 0.25f;     
-                }
-            } else if (d12xz > FAR_T && heartsFarTimer > 0.35f) {
-                heartCooldown = 0.0f;                
-            }
+        // LOVE 
+        glm::vec3 aMin = j1.getMin(), aMax = j1.getMax();
+        glm::vec3 bMin = j2.getMin(), bMax = j2.getMax();
 
-            heartsWereClose = closeNow;
+        float gapX = glm::max(0.0f, glm::max(aMin.x - bMax.x, bMin.x - aMax.x));
+        float gapZ = glm::max(0.0f, glm::max(aMin.z - bMax.z, bMin.z - aMax.z));
+        float gap  = std::sqrt(gapX*gapX + gapZ*gapZ);
+
+        static const float CLOSE_EPS   = 0.12f;
+        static const float FAR_EPS     = 0.30f;
+        static const float ENTER_DWELL = 0.04f;
+        static const float EXIT_DWELL  = 0.15f;
+
+        bool closeCond = (gap < CLOSE_EPS);
+        bool farCond   = (gap > FAR_EPS);
+
+        nearDwell = closeCond ? (nearDwell + dt) : 0.0f;
+        farDwell  = farCond   ? (farDwell  + dt) : 0.0f;
+
+        if (!heartsNearState && nearDwell >= ENTER_DWELL) {
+            heartsNearState = true;
+            nearDwell = farDwell = 0.0f; 
+            spawnHearts(12);  
+            heartTimer = 0.25f; 
+        }
+
+        if (heartsNearState) {
+            heartTimer -= dt;
+            if (heartTimer <= 0.0f) {
+                spawnHearts(6);
+                heartTimer = 0.25f;
+            }
+            if (farDwell >= EXIT_DWELL) {
+                heartsNearState = false;
+                nearDwell = farDwell = 0.0f;
+            }
+        }
+        // ENDS
+
 
             for (auto& h : hearts) {
                 h.t += dt;
