@@ -674,11 +674,11 @@ int main() {
         }
 
 
-        if (!down && wasDown) {
-            dragging = false;
-            draggedJelly = nullptr;  // Clear the dragged jelly reference
-        }
-        wasDown = down;
+        //if (!down && wasDown) {
+        //    dragging = false;
+        //    draggedJelly = nullptr;  // Clear the dragged jelly reference
+        //}
+        //wasDown = down;
 
         if (dragging && draggedJelly) {
             double mx, my; 

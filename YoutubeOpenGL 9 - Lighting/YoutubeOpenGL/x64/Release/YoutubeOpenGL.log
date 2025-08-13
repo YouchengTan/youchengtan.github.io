@@ -1,12 +1,10 @@
-﻿  Jelly.cpp
-F:\UCB\CS184\finalproject\YoutubeOpenGL 9 - Lighting\src\Jelly.cpp(1,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
-  Main.cpp
+﻿  Main.cpp
 F:\UCB\CS184\finalproject\YoutubeOpenGL 9 - Lighting\src\Main.cpp(1,1): warning C4819: The file contains a character that cannot be represented in the current code page (936). Save the file in Unicode format to prevent data loss
 LINK : warning LNK4098: defaultlib 'MSVCRTD' conflicts with use of other libs; use /NODEFAULTLIB:library
   Generating code
-  132 of 2233 functions ( 5.9%) were compiled, the rest were copied from previous compilation.
-    30 functions were new in current compilation
-    19 functions had inline decision re-evaluated but remain unchanged
+  25 of 2233 functions ( 1.1%) were compiled, the rest were copied from previous compilation.
+    24 functions were new in current compilation
+    10 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
 glfw3.lib(input.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(input.obj)' or at ''; linking object as if no debug info
 glfw3.lib(context.obj) : warning LNK4099: PDB '' was not found with 'glfw3.lib(context.obj)' or at ''; linking object as if no debug info
