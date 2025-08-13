@@ -34,8 +34,8 @@
 		<a href="https://youchengtan.github.io/Final/index.html">Link to final report</a><br>
 		<a href="https://youchengtan.github.io/Milestone/index.html">Link to milestone report</a><br>
 		<a href="https://youchengtan.github.io/Proposal/index.html">Link to proposal</a><br>
-        <a href="https://docs.google.com/presentation/d/1L-u2iUA-MpvL46bzVJB2LVmLTKtNV6D8XHBQds1IgqI/edit?usp=sharing">Link to milestone Slides</a><br>
-        <a href="https://drive.google.com/file/d/1OcM8gqNmgHnwk72yT1SMjGzQWUh8Fx8G/view?usp=sharing">Link to milestone recording</a><br>
+        <a href="https://docs.google.com/presentation/d/1t-e2iZIvaM5kDoY9wbH-TMPe6Boq9q_48pCZuVRz0g4/edit?usp=sharing">Link to final report slides</a><br>
+        <a href="">Link to final report recording</a><br>
 		<a href="https://youtu.be/45MIykWJ-C4">Link to openGL tutorial</a>
 		<br>
 
@@ -49,7 +49,7 @@
 		<p>Inspired by homework 4 part 1 and 2, we built an evenly spaced 2d grid of point-masses, linked them with structural, shearing and bending springs, and compute the total spring and damping forces on each mass. We implemented a Verlet integrator under gravity and enforce Provot's 110% stretch constraint.'</p>
 		<h2>Final Results</h2>
 
-        <p>Below is an example of the current program:</p>
+        <p>Results:</p>
 		
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
@@ -62,11 +62,19 @@
 				  <img src="./images/low.gif" width="400px"/>
 				  <figcaption><i>Collision of two jelly cubes with low spring count</i></figcaption>
 				</td>
+				<td style="text-align: center;">
+				  <img src="./images/stress.gif" width="400px"/>
+				  <figcaption><i>Stress map of springs on the jelly cubes</i></figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="./images/final.gif" width="400px"/>
+				  <figcaption><i>final result with meteors and smoke</i></figcaption>
+				</td>
 			  </tr>
 			</table>
 		</div>
 
-		<h2>Summary of implemented algorithms</h2>
+		<h2>Technical Approach</h2>
 
 		<h2>Mass-Spring System Construction</h2>
 		<p>On each jelly, springs uniformly connect point mass on each face in a grid pattern and the diagonals on each face, the springs also connect opposing vertices as well as faces to prevent "pancaking"</p>
@@ -83,7 +91,7 @@
 		<h2>Mouse Ray Jelly Dragging</h2>
 		<p>When the mouse clicks on a jelly, a ray is cast from the camera through the cursor position into the scene. If the ray intersects the jelly’s axis-aligned bounding box, the intersection point is calculated. The closest particle on the jelly to this point is selected, and a pin constraint is applied to it during the Position-Based Dynamics step. The pin pulls the particle toward the ray’s target position each frame, with adjustable stiffness, while the rest of the jelly deforms naturally due to spring constraints. This allows interactive dragging of any point on the jelly surface, creating realistic stretching and squashing effects.</p>
 
-		<h2>...</h2>
+		<h2>Lessons learned: many systems can be represented as systems of springs and mass particles, such as the clothings from hw4 and our jellys cubes, approximations in computer graphics are necessary to achieve real time rendering, have we implemented ray tracing for the jelly cubes the program would not render in real time.</h2>
 		<p></p>
 
 		<h2>Resources</h2>
@@ -95,6 +103,11 @@
 		<a href=https://github.com/jiripospisil/SoftBodyPhysics>SoftBodyPhysics</a><br>
 		<a href=https://github.com/erincatto/box2d>Box2D (for collision inspiration)</a><br>
 
+		<h2>Contributions</h2>
+		<p>Jeffrey Lin: Whole jelly dragging, scene, cat meteors, lighting, horizon generation, the orbiting lights, spawning smaller jelly cubes, and smoke effects. Also helped with Verlet Integration.</p>
+		<p>Youcheng Tan: Jelly mesh construction, jelly spring construction, Verlet Integration for spring dynamics, jelly dynamics, jelly collisions. Also responsible for the website reports and presentation slides on the milestone and final submission.</p>
+		<p>Katrina Zhu: Stress map for spring compressions, jelly shadows.</p>
+		<p>Jiaqi Su: point-based jelly dragging</p>
 
 		</div>
 	</body>
